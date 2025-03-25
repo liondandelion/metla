@@ -1,0 +1,12 @@
+[package]
+name = "metla"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+poem = { version = "3.1.7", features = ["static-files"] }
+sqlx = "0.8.3"
+maud = { version = "*", features = ["poem"] }
+
+tokio = { version = "1.44.1", features = ["rt-multi-thread"] }
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
