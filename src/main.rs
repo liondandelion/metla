@@ -18,7 +18,6 @@ async fn main() -> Result<(), std::io::Error> {
         .at("/hello/:name", poem::get(hello))
         .at("/", poem::get(root))
         .at("/register", poem::get(register).post(register))
-        .at("/register_post", poem::post(register_post))
         .nest(
             "/static",
             poem::endpoint::StaticFilesEndpoint::new("./static"),
@@ -56,7 +55,15 @@ struct UserCreds {
 }
 
 #[poem::handler]
-async fn register(method: poem::http::Method) -> poem::Response {
+async fn register(
+    method: poem::http::Method,
+    form_res: poem::Result<poem::web::Form<UserCreds>>,
+    pool: poem::web::Data<&sqlx::PgPool>,
+) -> poem::Response {
+    if form_res.is_err() && method == poem::http::Method::POST {
+        return form_res.err().unwrap().into_response();
+    }
+
     match method {
         poem::http::Method::GET => html! {
             (header("Register"))
@@ -81,46 +88,42 @@ async fn register(method: poem::http::Method) -> poem::Response {
             }
         }
         .into_response(),
-        poem::http::Method::POST => poem::web::Redirect::see_other("/register").into_response(),
-        _ => poem::web::Redirect::see_other("/register").into_response(),
-    }
-}
+        poem::http::Method::POST => {
+            use argon2::PasswordHasher;
+            use argon2::password_hash::SaltString;
+            use argon2::password_hash::rand_core::OsRng;
 
-#[poem::handler]
-async fn register_post(
-    poem::web::Form(UserCreds {
-        email,
-        username,
-        password,
-    }): poem::web::Form<UserCreds>,
-    pool: poem::web::Data<&sqlx::PgPool>,
-) -> poem::web::Redirect {
-    use argon2::PasswordHasher;
-    use argon2::password_hash::SaltString;
-    use argon2::password_hash::rand_core::OsRng;
+            let UserCreds {
+                email,
+                username,
+                password,
+            } = form_res.unwrap().0;
 
-    let salt = SaltString::generate(OsRng);
-    let argon2 = argon2::Argon2::default();
-    let hash = argon2.hash_password(password.as_bytes(), &salt).unwrap();
+            let salt = SaltString::generate(OsRng);
+            let argon2 = argon2::Argon2::default();
+            let hash = argon2.hash_password(password.as_bytes(), &salt).unwrap();
 
-    sqlx::query(
-        r#"
+            sqlx::query(
+                r#"
             insert into users (email, username, password_hash, salt)
             values
             (
                 $1, $2, $3, $4
             )
                 "#,
-    )
-    .bind(email)
-    .bind(username)
-    .bind(hash.to_string())
-    .bind(salt.to_string())
-    .execute(*pool)
-    .await
-    .unwrap();
+            )
+            .bind(email)
+            .bind(username)
+            .bind(hash.to_string())
+            .bind(salt.to_string())
+            .execute(*pool)
+            .await
+            .unwrap();
 
-    poem::web::Redirect::see_other("/register")
+            poem::web::Redirect::see_other("/register").into_response()
+        }
+        _ => poem::web::Redirect::see_other("/register").into_response(),
+    }
 }
 
 #[poem::handler]
