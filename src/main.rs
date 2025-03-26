@@ -13,8 +13,7 @@ async fn main() -> Result<(), std::io::Error> {
     let routes = poem::Route::new()
         .at("/hello/:name", poem::get(hello))
         .at("/", poem::get(root))
-        .at("/login", poem::get(login))
-        .at("register", poem::get(register))
+        .at("/register", poem::get(register).post(register))
         .nest(
             "/static",
             poem::endpoint::StaticFilesEndpoint::new("./static"),
@@ -44,36 +43,14 @@ fn hello(poem::web::Path(name): poem::web::Path<String>) -> Markup {
 }
 
 #[poem::handler]
-fn login() -> Markup {
-    html! {
-        (header("Login"))
-        link rel="stylesheet" type="text/css" href="/static/form-demo.css"
-
-        form action="" method="get" class="form-example" {
-            div class="form-example" {
-                label for="name" { "Enter your name: " }
-                input type="text" name="name" id="name" required;
-            }
-            div class="form-example" {
-                label for="email" { "Enter your email: " }
-                input type="email" name="email" id="email" required;
-            }
-            div class="form-example" {
-                input type="submit" value="Subscribe!";
-            }
-        }
-    }
-}
-
-#[poem::handler]
 fn register(method: poem::http::Method) -> Markup {
     match method {
         poem::http::Method::GET => {
             html! {
                 (header("Register"))
-                link rel="stylesheet" type="text/css" href="/static/form-demo.css"
+                link rel="stylesheet" type="text/css" href="/static/form-demo.css";
 
-                form action="" method="get" class="form-example" {
+                form action="/register" method="post" class="form-example" {
                     div class="form-example" {
                         label for="email" { "Enter your email: " }
                         input type="email" name="email" id="email" required;
