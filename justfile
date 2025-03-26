@@ -6,8 +6,8 @@ root := justfile_directory()
 tools-install:
     cargo install sqlx-cli
 
-db-setup:
-    mkdir -p {{root}}/pgdata
+db-first-setup:
+    mkdir -p {{ root }}/pgdata
     podman run -d \
         --name postgres \
         -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
@@ -15,8 +15,14 @@ db-setup:
         -p 5432:5432 \
         postgres
     sleep 2
-    sqlx db create --database-url "postgres://postgres:${POSTGRES_PASSWORD}@localhost:5432/metla"
-    sqlx migrate run --database-url "postgres://postgres:${POSTGRES_PASSWORD}@localhost:5432/metla"
+    just db-create
+
+db-create:
+    sqlx db create
+    sqlx migrate run
+
+db-delete:
+    sqlx db drop
 
 psql:
     podman exec -it postgres psql -U postgres -d metla
