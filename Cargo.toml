@@ -7,6 +7,9 @@ edition = "2024"
 poem = { version = "3.1.7", features = ["static-files"] }
 sqlx = { version = "0.8.3", features = ["postgres", "runtime-tokio"] }
 maud = { version = "*", features = ["poem"] }
+jsonwebtoken = "9"
 
+serde = {version = "1.0", features = ["derive"] }
 tokio = { version = "1.44.1", features = ["rt-multi-thread"] }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+argon2 = "*"
