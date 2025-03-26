@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 poem = { version = "3.1.7", features = ["static-files"] }
-sqlx = "0.8.3"
+sqlx = { version = "0.8.3", features = ["postgres", "runtime-tokio"] }
 maud = { version = "*", features = ["poem"] }
 
 tokio = { version = "1.44.1", features = ["rt-multi-thread"] }
