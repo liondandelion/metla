@@ -39,6 +39,12 @@ fn header(page_title: &str) -> Markup {
     }
 }
 
+fn link_home() -> Markup {
+    html! {
+        a href="/" { "Back home" }
+    }
+}
+
 #[poem::handler]
 fn hello(poem::web::Path(name): poem::web::Path<String>) -> Markup {
     html! {
@@ -86,6 +92,8 @@ async fn register(
                     input type="submit" value="Register";
                 }
             }
+
+            (link_home())
         }
         .into_response(),
         poem::http::Method::POST => {
@@ -127,6 +135,15 @@ async fn register(
 }
 
 #[poem::handler]
-fn root() -> String {
-    format!("root page")
+fn root() -> Markup {
+    html! {
+        (header("Index"))
+        p { "Website's map" }
+
+        ul {
+            li {
+                a href="/register" { "Register" }
+            }
+        }
+    }
 }
