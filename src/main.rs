@@ -138,6 +138,9 @@ fn root() -> Markup {
             li {
                 a href="/register" { "Register" }
             }
+            li {
+                a href="/debug_users" { "Debug users table" }
+            }
         }
     }
 }
@@ -196,5 +199,7 @@ async fn debug_users_table(pool: poem::web::Data<&sqlx::PgPool>) -> Markup {
                 }
             }
         }
+        br;
+        (link_home())
     }
 }
