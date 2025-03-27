@@ -105,7 +105,27 @@ async fn register(
             let argon2 = argon2::Argon2::default();
             let hash = argon2.hash_password(password.as_bytes(), &salt).unwrap();
 
-            sqlx::query(
+            let (db_email, db_username): (String, String) = sqlx::query_as(
+                r#"
+                select email, username from users where email = $1
+                "#,
+            )
+            .bind(&email)
+            .fetch_one(*pool)
+            .await
+            .unwrap();
+
+            if email == db_email {
+                return poem::Response::builder()
+                    .status(poem::http::StatusCode::CONFLICT)
+                    .body(format!("Email ({email}) already exists"));
+            } else if username == db_username {
+                return poem::Response::builder()
+                    .status(poem::http::StatusCode::CONFLICT)
+                    .body(format!("Username ({username}) already exists"));
+            }
+
+            let query_result = sqlx::query(
                 r#"
             insert into users (email, username, password_hash, salt)
             values
@@ -119,8 +139,13 @@ async fn register(
             .bind(hash.to_string())
             .bind(salt.to_string())
             .execute(*pool)
-            .await
-            .unwrap();
+            .await;
+
+            if query_result.is_err() {
+                return poem::Response::builder()
+                    .status(poem::http::StatusCode::INTERNAL_SERVER_ERROR)
+                    .body("Database error occured");
+            }
 
             poem::web::Redirect::see_other("/register").into_response()
         }
