@@ -1,5 +1,7 @@
 use maud::{Markup, html};
 use poem::{EndpointExt, web::IntoResponse};
+use sqlx::Row;
+use tokio_stream::StreamExt;
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
@@ -18,6 +20,7 @@ async fn main() -> Result<(), std::io::Error> {
         .at("/hello/:name", poem::get(hello))
         .at("/", poem::get(root))
         .at("/register", poem::get(register).post(register))
+        .at("/debug_users", poem::get(debug_users_table))
         .nest(
             "/static",
             poem::endpoint::StaticFilesEndpoint::new("./static"),
@@ -143,6 +146,63 @@ fn root() -> Markup {
         ul {
             li {
                 a href="/register" { "Register" }
+            }
+        }
+    }
+}
+
+struct UserRow {
+    email: String,
+    username: String,
+    password_hash: String,
+    salt: String,
+}
+
+impl Into<UserRow> for sqlx::postgres::PgRow {
+    fn into(self) -> UserRow {
+        UserRow {
+            email: self.get("email"),
+            username: self.get("username"),
+            password_hash: self.get("password_hash"),
+            salt: self.get("salt"),
+        }
+    }
+}
+
+#[poem::handler]
+async fn debug_users_table(pool: poem::web::Data<&sqlx::PgPool>) -> Markup {
+    let mut stream = sqlx::query(
+        r#"
+            select * from users;
+        "#,
+    )
+    .fetch(*pool);
+
+    let mut users = Vec::<UserRow>::new();
+    while let Some(row) = stream.next().await {
+        let user: UserRow = row.unwrap().into();
+        users.push(user);
+    }
+
+    html! {
+        table {
+            thead {
+                tr {
+                    th scope="col" { "Email" }
+                    th scope="col" { "Username" }
+                    th scope="col" { "Password hash" }
+                    th scope="col" { "Salt" }
+                }
+            }
+            tbody {
+                @for user in users {
+                    tr {
+                        th scope="row" { (user.email) }
+                        td { (user.username) }
+                        td { (user.password_hash) }
+                        td { (user.salt) }
+                    }
+                }
             }
         }
     }
