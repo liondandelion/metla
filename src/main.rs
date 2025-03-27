@@ -17,7 +17,6 @@ async fn main() -> Result<(), std::io::Error> {
         .unwrap();
 
     let routes = poem::Route::new()
-        .at("/hello/:name", poem::get(hello))
         .at("/", poem::get(root))
         .at("/register", poem::get(register).post(register))
         .at("/debug_users", poem::get(debug_users_table))
@@ -45,14 +44,6 @@ fn header(page_title: &str) -> Markup {
 fn link_home() -> Markup {
     html! {
         a href="/" { "Back home" }
-    }
-}
-
-#[poem::handler]
-fn hello(poem::web::Path(name): poem::web::Path<String>) -> Markup {
-    html! {
-        (header("Title"))
-        p { "hello, " (name) "!" }
     }
 }
 
