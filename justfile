@@ -26,3 +26,6 @@ db-delete:
 
 psql:
     podman exec -it postgres psql -U postgres -d metla
+
+gobuild:
+    go build -o ./build/metla ./cmd/metla/
