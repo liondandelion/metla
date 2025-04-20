@@ -19,7 +19,7 @@ func main() {
 	FileServer(r, "/static", staticDir)
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		RootPage().Render(w)
+		HomePage().Render(w)
 	})
 	r.Get("/register", func(w http.ResponseWriter, r *http.Request) {
 		RegisterPage().Render(w)

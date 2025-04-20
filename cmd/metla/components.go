@@ -20,7 +20,7 @@ func LinkHome() g.Node {
 	return h.A(h.Href("/"), g.Text("Back home"))
 }
 
-func RootPage() g.Node {
+func HomePage() g.Node {
 	return c.HTML5(c.HTML5Props {
 		Title: "Index",
 		Language: "en",
