@@ -71,7 +71,7 @@ func UsersTablePage(users []User) g.Node {
 			node := h.Tr(
 				h.Th(g.Attr("scope", "row"), g.Text(user.Email)),
 				h.Td(g.Text(user.Username)),
-				h.Td(g.Text(user.Password_hash)),
+				h.Td(g.Text(user.PasswordHash)),
 			)
 			list = append(list, node)
 		}
