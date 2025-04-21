@@ -91,6 +91,8 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(os.Stderr, "%v", err)
 	}
 	_ = tag
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func UsersTable(w http.ResponseWriter, r *http.Request) {
