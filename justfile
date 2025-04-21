@@ -27,4 +27,5 @@ psql:
     podman exec -it postgres psql -U postgres -d metla
 
 gobuild:
+    gofmt -w ./cmd/metla/*
     go build -o ./build/metla ./cmd/metla/
