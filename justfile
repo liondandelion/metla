@@ -3,19 +3,18 @@ _default:
 
 root := justfile_directory()
 
+alias pr := postgres-run
+
 tools-install:
     cargo install sqlx-cli
 
-db-first-setup:
-    mkdir -p {{ root }}/pgdata
+postgres-run:
     podman run -d \
         --name postgres \
         -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
-        -v {{root}}/pgdata:/var/lib/postgresql/data:Z \
+        -v ${PGDATA}:/var/lib/postgresql/data:Z \
         -p 5432:5432 \
         postgres
-    sleep 2
-    just db-create
 
 db-create:
     sqlx db create
