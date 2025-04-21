@@ -1,17 +1,17 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"os"
-	"fmt"
 	"path/filepath"
 	"strings"
-	"context"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"golang.org/x/crypto/bcrypt"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func main() {
@@ -47,8 +47,8 @@ func FileServer(r chi.Router, path string, root http.FileSystem) {
 		panic("FileServer does not permit URL params")
 	}
 
-	if path != "/" && path[len(path) - 1] != '/' {
-		r.Get(path, http.RedirectHandler(path + "/", 301).ServeHTTP)
+	if path != "/" && path[len(path)-1] != '/' {
+		r.Get(path, http.RedirectHandler(path+"/", 301).ServeHTTP)
 		path += "/"
 	}
 	path += "*"

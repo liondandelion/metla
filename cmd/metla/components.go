@@ -2,15 +2,15 @@ package main
 
 import (
 	g "maragu.dev/gomponents"
-	h "maragu.dev/gomponents/html"
 	c "maragu.dev/gomponents/components"
+	h "maragu.dev/gomponents/html"
 )
 
 func Page(title string, children ...g.Node) g.Node {
-	return c.HTML5(c.HTML5Props {
-		Title: title,
+	return c.HTML5(c.HTML5Props{
+		Title:    title,
 		Language: "en",
-		Body: []g.Node {
+		Body: []g.Node{
 			g.Group(children),
 		},
 	})
@@ -21,10 +21,10 @@ func LinkHome() g.Node {
 }
 
 func HomePage() g.Node {
-	return c.HTML5(c.HTML5Props {
-		Title: "Index",
+	return c.HTML5(c.HTML5Props{
+		Title:    "Index",
 		Language: "en",
-		Body: []g.Node {
+		Body: []g.Node{
 			h.P(g.Text("Website's map")),
 			h.Ul(
 				h.Li(h.A(h.Href("/register"), g.Text("Register"))),
@@ -35,13 +35,13 @@ func HomePage() g.Node {
 }
 
 func RegisterPage() g.Node {
-	return c.HTML5(c.HTML5Props {
-		Title: "Register",
+	return c.HTML5(c.HTML5Props{
+		Title:    "Register",
 		Language: "en",
-		Head: []g.Node {
+		Head: []g.Node{
 			h.Link(h.Rel("stylesheet"), h.Type("text/css"), h.Href("/static/form-demo.css")),
 		},
-		Body: []g.Node {
+		Body: []g.Node{
 			h.Form(h.Action("/register"), h.Method("post"), h.Class("form-example"),
 				h.Div(h.Class("form-example"),
 					h.Label(h.For("email"), g.Text("Enter your email: ")),
