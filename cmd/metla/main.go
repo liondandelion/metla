@@ -81,7 +81,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	conn, ok := ctx.Value("dbpool").(*pgxpool.Pool)
 	if !ok {
-		fmt.Fprintln(os.Stderr, "Dbpool bad")
+		fmt.Fprintln(os.Stderr, "Could not get dbpool out of context")
 		http.Error(w, http.StatusText(422), 422)
 		return
 	}
@@ -99,7 +99,7 @@ func UsersTable(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	conn, ok := ctx.Value("dbpool").(*pgxpool.Pool)
 	if !ok {
-		fmt.Fprintln(os.Stderr, "Dbpool bad")
+		fmt.Fprintln(os.Stderr, "Could not get dbpool out of context")
 		http.Error(w, http.StatusText(422), 422)
 		return
 	}
