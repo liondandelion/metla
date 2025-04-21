@@ -28,7 +28,7 @@ func HomePage() g.Node {
 			h.P(g.Text("Website's map")),
 			h.Ul(
 				h.Li(h.A(h.Href("/register"), g.Text("Register"))),
-				h.Li(h.A(h.Href("/debug_users"), g.Text("Debug users table"))),
+				h.Li(h.A(h.Href("/userstable"), g.Text("Print users table"))),
 			),
 		},
 	})
@@ -59,6 +59,42 @@ func RegisterPage() g.Node {
 					h.Input(h.Type("submit"), h.Value("Register")),
 				),
 			),
+			LinkHome(),
+		},
+	})
+}
+
+func UsersTablePage(users []User) g.Node {
+	forloop := func(users []User) []g.Node {
+		list := make([]g.Node, 0, 10)
+		for _, user := range users {
+			node := h.Tr(
+				h.Th(g.Attr("scope", "row"), g.Text(user.Email)),
+				h.Td(g.Text(user.Username)),
+				h.Td(g.Text(user.Password_hash)),
+			)
+			list = append(list, node)
+		}
+		return list
+	}
+
+	return c.HTML5(c.HTML5Props{
+		Title:    "Userdebug",
+		Language: "en",
+		Body: []g.Node{
+			h.Table(
+				h.THead(
+					h.Tr(
+						h.Th(g.Attr("scope", "col"), g.Text("Email")),
+						h.Th(g.Attr("scope", "col"), g.Text("Username")),
+						h.Th(g.Attr("scope", "col"), g.Text("Password hash")),
+					),
+				),
+				h.TBody(
+					forloop(users)...,
+				),
+			),
+			h.Br(),
 			LinkHome(),
 		},
 	})

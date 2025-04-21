@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -38,6 +39,7 @@ func main() {
 		RegisterPage().Render(w)
 	})
 	r.Post("/register", Register)
+	r.Get("/userstable", UsersTable)
 
 	http.ListenAndServe(":3001", r)
 }
@@ -75,12 +77,11 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	hash, _ := hashPassword(password)
-	fmt.Println(hash)
-	fmt.Println("wowzers")
 
 	ctx := r.Context()
 	conn, ok := ctx.Value("dbpool").(*pgxpool.Pool)
 	if !ok {
+		fmt.Fprintln(os.Stderr, "Dbpool bad")
 		http.Error(w, http.StatusText(422), 422)
 		return
 	}
@@ -90,4 +91,24 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(os.Stderr, "%v", err)
 	}
 	_ = tag
+}
+
+func UsersTable(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	conn, ok := ctx.Value("dbpool").(*pgxpool.Pool)
+	if !ok {
+		fmt.Fprintln(os.Stderr, "Dbpool bad")
+		http.Error(w, http.StatusText(422), 422)
+		return
+	}
+
+	rows, _ := conn.Query(context.Background(), "select * from users;")
+	users, err := pgx.CollectRows(rows, pgx.RowToStructByName[User])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v", err)
+		http.Error(w, http.StatusText(422), 422)
+		return
+	}
+
+	UsersTablePage(users).Render(w)
 }
