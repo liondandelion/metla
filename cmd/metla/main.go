@@ -6,13 +6,26 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"context"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"golang.org/x/crypto/bcrypt"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+
+	dbpool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
+		os.Exit(1)
+	}
+	defer dbpool.Close()
+
+	r.Use(middleware.WithValue("dbpool", dbpool))
 
 	workDir, _ := os.Getwd()
 	staticDir := http.Dir(filepath.Join(workDir, "static"))
@@ -54,4 +67,27 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	username := r.PostFormValue("username")
 	password := r.PostFormValue("password")
 	fmt.Println(email, username, password)
+
+	hashPassword := func(password string) (string, error) {
+		/* encodedSaltSize = 22 bytes */
+		bytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
+		return string(bytes), err
+	}
+
+	hash, _ := hashPassword(password)
+	fmt.Println(hash)
+	fmt.Println("wowzers")
+
+	ctx := r.Context()
+	conn, ok := ctx.Value("dbpool").(*pgxpool.Pool)
+	if !ok {
+		http.Error(w, http.StatusText(422), 422)
+		return
+	}
+
+	tag, err := conn.Exec(context.Background(), "insert into users (email, username, password_hash) values ($1, $2, $3)", email, username, hash)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v", err)
+	}
+	_ = tag
 }
