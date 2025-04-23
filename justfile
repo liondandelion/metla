@@ -10,9 +10,9 @@ tools-install:
 
 postgres-run:
     podman run -d \
-        --name postgres \
+        --name postgres-metla \
         -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
-        -v ${PGDATA}:/var/lib/postgresql/data:Z \
+        -v postgres_metla:/var/lib/postgresql/data \
         -p 5432:5432 \
         postgres
 
@@ -24,7 +24,7 @@ db-delete:
     sqlx db drop
 
 psql:
-    podman exec -it postgres psql -U postgres -d metla
+    podman exec -it postgres-metla psql -U postgres -d metla
 
 gobuild:
     gofmt -w ./cmd/metla/*
