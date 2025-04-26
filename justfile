@@ -37,7 +37,7 @@ db-delete:
     sqlx db drop
 
 psql:
-    podman exec -it postgres-metla psql -U postgres -d metla
+    podman exec -it postgres-metla psql -U postgres
 
 gobuild:
     gofmt -w ./cmd/metla/*
