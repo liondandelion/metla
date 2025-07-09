@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"html/template"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -12,10 +13,22 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
 
+type User struct {
+	Username     string
+	PasswordHash string
+}
+
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to load .env: %v\n", err)
+		os.Exit(1)
+	}
+
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
@@ -29,14 +42,16 @@ func main() {
 	r.Use(middleware.WithValue("dbpool", dbpool))
 
 	workDir, _ := os.Getwd()
-	staticDir := http.Dir(filepath.Join(workDir, "static"))
+	staticDir := http.Dir(filepath.Join(workDir, "web/static"))
 	FileServer(r, "/static", staticDir)
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		HomePage().Render(w)
+		tmpl := template.Must(template.ParseFiles("web/html/index.html"))
+		tmpl.Execute(w, nil)
 	})
 	r.Get("/register", func(w http.ResponseWriter, r *http.Request) {
-		RegisterPage().Render(w)
+		tmpl := template.Must(template.ParseFiles("web/html/register.html"))
+		tmpl.Execute(w, nil)
 	})
 	r.Post("/register", Register)
 	r.Get("/userstable", UsersTable)
@@ -65,10 +80,9 @@ func FileServer(r chi.Router, path string, root http.FileSystem) {
 
 func Register(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	email := r.PostFormValue("email")
 	username := r.PostFormValue("username")
 	password := r.PostFormValue("password")
-	fmt.Println(email, username, password)
+	fmt.Println(username, password)
 
 	hashPassword := func(password string) (string, error) {
 		/* encodedSaltSize = 22 bytes */
@@ -86,7 +100,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tag, err := conn.Exec(context.Background(), "insert into users (email, username, password_hash) values ($1, $2, $3)", email, username, hash)
+	tag, err := conn.Exec(context.Background(), "insert into users (username, password_hash) values ($1, $2)", username, hash)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)
 	}
@@ -112,5 +126,6 @@ func UsersTable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	UsersTablePage(users).Render(w)
+	tmpl := template.Must(template.ParseFiles("web/html/usersTable.html"))
+	tmpl.Execute(w, users)
 }

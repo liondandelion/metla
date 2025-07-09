@@ -6,6 +6,7 @@ require github.com/go-chi/chi/v5 v5.2.1
 
 require (
 	github.com/jackc/pgx/v5 v5.7.4
+	github.com/joho/godotenv v1.5.1
 	golang.org/x/crypto v0.37.0
 	maragu.dev/gomponents v1.1.0
 )
