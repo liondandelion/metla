@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -82,7 +81,6 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	username := r.PostFormValue("username")
 	password := r.PostFormValue("password")
-	fmt.Println(username, password)
 
 	hashPassword := func(password string) (string, error) {
 		/* encodedSaltSize = 22 bytes */
@@ -95,14 +93,14 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	conn, ok := ctx.Value("dbpool").(*pgxpool.Pool)
 	if !ok {
-		fmt.Fprintln(os.Stderr, "Could not get dbpool out of context")
+		log.Println("Could not get dbpool out of context")
 		http.Error(w, http.StatusText(422), 422)
 		return
 	}
 
 	tag, err := conn.Exec(context.Background(), "insert into users (username, password_hash) values ($1, $2)", username, hash)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
+		log.Printf("%v", err)
 	}
 	_ = tag
 
@@ -113,7 +111,7 @@ func UsersTable(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	conn, ok := ctx.Value("dbpool").(*pgxpool.Pool)
 	if !ok {
-		fmt.Fprintln(os.Stderr, "Could not get dbpool out of context")
+		log.Println("Could not get dbpool out of context")
 		http.Error(w, http.StatusText(422), 422)
 		return
 	}
@@ -121,7 +119,7 @@ func UsersTable(w http.ResponseWriter, r *http.Request) {
 	rows, _ := conn.Query(context.Background(), "select * from users;")
 	users, err := pgx.CollectRows(rows, pgx.RowToStructByName[User])
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
+		log.Printf("%v", err)
 		http.Error(w, http.StatusText(422), 422)
 		return
 	}
