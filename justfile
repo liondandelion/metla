@@ -32,7 +32,7 @@ psql:
     podman exec -it postgres-metla psql -U postgres
 
 build:
-    gofmt -w ./cmd/metla/*
+    gofmt -w ./cmd/metla/*.go
     go build -o ./build/metla ./cmd/metla/
 
 db-migrate:

@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -22,11 +22,13 @@ type User struct {
 	PasswordHash string
 }
 
+const staticDir = "web/static"
+const htmlDir = "web/html"
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to load .env: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("Unable to load .env: %v\n", err)
 	}
 
 	r := chi.NewRouter()
@@ -34,23 +36,21 @@ func main() {
 
 	dbpool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create connection pool: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("Unable to create connection pool: %v\n", err)
 	}
 	defer dbpool.Close()
 
 	r.Use(middleware.WithValue("dbpool", dbpool))
 
-	workDir, _ := os.Getwd()
-	staticDir := http.Dir(filepath.Join(workDir, "web/static"))
+	staticDir := http.Dir(staticDir)
 	FileServer(r, "/static", staticDir)
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		tmpl := template.Must(template.ParseFiles("web/html/index.html"))
+		tmpl := template.Must(template.ParseFiles(htmlDir + "/index.html"))
 		tmpl.Execute(w, nil)
 	})
 	r.Get("/register", func(w http.ResponseWriter, r *http.Request) {
-		tmpl := template.Must(template.ParseFiles("web/html/register.html"))
+		tmpl := template.Must(template.ParseFiles(htmlDir + "/register.html"))
 		tmpl.Execute(w, nil)
 	})
 	r.Post("/register", Register)
@@ -126,6 +126,6 @@ func UsersTable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl := template.Must(template.ParseFiles("web/html/usersTable.html"))
+	tmpl := template.Must(template.ParseFiles(htmlDir + "/usersTable.html"))
 	tmpl.Execute(w, users)
 }
