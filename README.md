@@ -47,5 +47,23 @@
 
 
 *Это примерные рамки, всегда могут быть исключения как в большую, так и в
-меньшую сторону. Будут учитываться так же: сложность проекта,грамотное
+меньшую сторону. Будут учитываться так же: сложность проекта, грамотное
 разделение ролей и задач, история ведения Git, баг-трекера и тд.
+
+# Полезное
+
+1. https://maplibre.org
+- https://protomaps.com
+- https://caddyserver.com
+- https://geojson.io
+- http://bboxfinder.com
+- https://datatracker.ietf.org/doc/html/rfc7946
+- https://overturemaps.org/
+- https://slice.openstreetmap.us
+
+SPB bbox: 29.410000,59.615000,30.780000,60.265000
+
+## Примеры
+
+1. https://til.simonwillison.net/gis/pmtiles
+- https://til.simonwillison.net/overture-maps/overture-maps-parquet#user-content-filtering-for-places-in-half-moon-bay
