@@ -21,8 +21,9 @@ type User struct {
 	PasswordHash string
 }
 
-const staticDir = "web/static"
-const htmlDir = "web/html"
+const assetsDirPath = "web"
+const cssDirPath = assetsDirPath + "/css"
+const htmlDirPath = assetsDirPath + "/html"
 
 func main() {
 	err := godotenv.Load()
@@ -41,15 +42,15 @@ func main() {
 
 	r.Use(middleware.WithValue("dbpool", dbpool))
 
-	staticDir := http.Dir(staticDir)
-	FileServer(r, "/static", staticDir)
+	assetsDir := http.Dir(assetsDirPath)
+	FileServer(r, "/assets", assetsDir)
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		tmpl := template.Must(template.ParseFiles(htmlDir + "/index.html"))
+		tmpl := template.Must(template.ParseFiles(htmlDirPath + "/index.html"))
 		tmpl.Execute(w, nil)
 	})
 	r.Get("/register", func(w http.ResponseWriter, r *http.Request) {
-		tmpl := template.Must(template.ParseFiles(htmlDir + "/register.html"))
+		tmpl := template.Must(template.ParseFiles(htmlDirPath + "/register.html"))
 		tmpl.Execute(w, nil)
 	})
 	r.Post("/register", Register)
@@ -124,6 +125,6 @@ func UsersTable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl := template.Must(template.ParseFiles(htmlDir + "/usersTable.html"))
+	tmpl := template.Must(template.ParseFiles(htmlDirPath + "/usersTable.html"))
 	tmpl.Execute(w, users)
 }
