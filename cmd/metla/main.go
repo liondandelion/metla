@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	fp "path/filepath"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -21,9 +22,11 @@ type User struct {
 	PasswordHash string
 }
 
-const assetsDirPath = "web"
-const cssDirPath = assetsDirPath + "/css"
-const htmlDirPath = assetsDirPath + "/html"
+var (
+	assetsDirPath = "web"
+	cssDirPath    = fp.Join(assetsDirPath, "css")
+	htmlDirPath   = fp.Join(assetsDirPath, "html")
+)
 
 func main() {
 	err := godotenv.Load()
@@ -46,11 +49,11 @@ func main() {
 	FileServer(r, "/assets", assetsDir)
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		tmpl := template.Must(template.ParseFiles(htmlDirPath + "/index.html"))
+		tmpl := template.Must(template.ParseFiles(fp.Join(htmlDirPath, "index.html")))
 		tmpl.Execute(w, nil)
 	})
 	r.Get("/register", func(w http.ResponseWriter, r *http.Request) {
-		tmpl := template.Must(template.ParseFiles(htmlDirPath + "/register.html"))
+		tmpl := template.Must(template.ParseFiles(fp.Join(htmlDirPath, "register.html")))
 		tmpl.Execute(w, nil)
 	})
 	r.Post("/register", Register)
@@ -125,6 +128,6 @@ func UsersTable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl := template.Must(template.ParseFiles(htmlDirPath + "/usersTable.html"))
+	tmpl := template.Must(template.ParseFiles(fp.Join(htmlDirPath, "usersTable.html")))
 	tmpl.Execute(w, users)
 }
