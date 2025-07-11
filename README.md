@@ -57,8 +57,9 @@
 1. https://caddyserver.com
 1. https://geojson.io
 1. http://bboxfinder.com
+1. https://spelunker.whosonfirst.org
 1. https://datatracker.ietf.org/doc/html/rfc7946
-1. https://overturemaps.org/
+1. https://overturemaps.org
 1. https://slice.openstreetmap.us
 
 SPB bbox: 29.410000,59.615000,30.780000,60.265000
