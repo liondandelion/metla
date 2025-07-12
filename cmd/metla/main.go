@@ -37,7 +37,7 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
-	dbpool, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
+	dbpool, err := pgxpool.New(context.Background(), os.Getenv("POSTGRES_URL"))
 	if err != nil {
 		log.Fatalf("Unable to create connection pool: %v\n", err)
 	}

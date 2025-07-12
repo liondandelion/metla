@@ -35,10 +35,14 @@ build:
     gofmt -w ./cmd/metla/*.go
     go build -o ./build/metla ./cmd/metla/
 
-db-migrate:
+db-create:
     podman exec postgres-metla psql -U postgres -c "create database metla;"
-    podman exec postgres-metla psql -U postgres -d metla \
-    -c "create table users (username text, password_hash text);"
+
+db-migrate where="up":
+    migrate -database ${POSTGRES_URL}?sslmode=disable -path ./migrations {{where}}
 
 db-remove:
     podman exec postgres-metla psql -U postgres -c "drop database metla;"
+
+install-tools:
+    go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
