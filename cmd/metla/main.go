@@ -31,7 +31,7 @@ var (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Unable to load .env: %v\n", err)
+		log.Fatalf("Main: unable to load .env: %v\n", err)
 	}
 
 	r := chi.NewRouter()
@@ -39,7 +39,7 @@ func main() {
 
 	dbpool, err := pgxpool.New(context.Background(), os.Getenv("POSTGRES_URL"))
 	if err != nil {
-		log.Fatalf("Unable to create connection pool: %v\n", err)
+		log.Fatalf("Main: unable to create connection pool: %v\n", err)
 	}
 	defer dbpool.Close()
 
@@ -64,11 +64,11 @@ func main() {
 
 func FileServer(r chi.Router, path string, root http.FileSystem) {
 	if strings.ContainsAny(path, "{}*") {
-		panic("FileServer does not permit URL params")
+		panic("FileServer: no URL params allowed")
 	}
 
 	if path != "/" && path[len(path)-1] != '/' {
-		r.Get(path, http.RedirectHandler(path+"/", 301).ServeHTTP)
+		r.Get(path, http.RedirectHandler(path+"/", http.StatusMovedPermanently).ServeHTTP)
 		path += "/"
 	}
 	path += "*"
@@ -97,14 +97,14 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	conn, ok := ctx.Value("dbpool").(*pgxpool.Pool)
 	if !ok {
-		log.Println("Could not get dbpool out of context")
-		http.Error(w, http.StatusText(422), 422)
+		log.Println("Register: could not get dbpool out of context")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
 	tag, err := conn.Exec(context.Background(), "insert into users (username, password_hash) values ($1, $2)", username, hash)
 	if err != nil {
-		log.Printf("%v", err)
+		log.Printf("Register: failed to insert user: %v", err)
 	}
 	_ = tag
 
@@ -115,16 +115,16 @@ func UsersTable(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	conn, ok := ctx.Value("dbpool").(*pgxpool.Pool)
 	if !ok {
-		log.Println("Could not get dbpool out of context")
-		http.Error(w, http.StatusText(422), 422)
+		log.Println("UsersTable: could not get dbpool out of context")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
 	rows, _ := conn.Query(context.Background(), "select * from users;")
 	users, err := pgx.CollectRows(rows, pgx.RowToStructByName[User])
 	if err != nil {
-		log.Printf("%v", err)
-		http.Error(w, http.StatusText(422), 422)
+		log.Printf("UsersTable: failed to collect rows: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
