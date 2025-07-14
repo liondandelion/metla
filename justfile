@@ -41,8 +41,8 @@ build:
 db-create:
     podman exec postgres-metla psql -U postgres -c "create database metla;"
 
-db-migrate where="up":
-    migrate -database ${POSTGRES_URL}?sslmode=disable -path ./migrations {{where}}
+db-migrate command="up":
+    migrate -database ${POSTGRES_URL}?sslmode=disable -path ./migrations {{command}}
 
 db-remove:
     podman exec postgres-metla psql -U postgres -c "drop database metla;"

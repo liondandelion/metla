@@ -5,10 +5,11 @@ go 1.24.2
 require github.com/go-chi/chi/v5 v5.2.1
 
 require (
+	github.com/alexedwards/scs/pgxstore v0.0.0-20250417082927-ab20b3feb5e9
+	github.com/alexedwards/scs/v2 v2.9.0
 	github.com/jackc/pgx/v5 v5.7.4
 	github.com/joho/godotenv v1.5.1
 	golang.org/x/crypto v0.37.0
-	maragu.dev/gomponents v1.1.0
 )
 
 require (
