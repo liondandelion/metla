@@ -34,11 +34,17 @@ var (
 )
 
 var sessionManager *scs.SessionManager
+var templateCache map[string]*template.Template
 
 func main() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("Main: unable to load .env: %v\n", err)
+	}
+
+	templateCache, err = newTemplateCache()
+	if err != nil {
+		log.Fatalf("Main: unable to create template cache: %v\n", err)
 	}
 
 	dbPool, err := pgxpool.New(context.Background(), os.Getenv("POSTGRES_URL"))
@@ -61,32 +67,12 @@ func main() {
 	r.Group(func(r chi.Router) {
 		r.Use(sessionManager.LoadAndSave)
 
-		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			tmpl := template.Must(template.ParseFiles(fp.Join(htmlDirPath, "index.html")))
+		r.Get("/", Index)
+		r.Get("/register", Register)
+		r.Get("/login", Login)
+		r.Get("/logout", Logout)
 
-			isAuthenticated := sessionManager.GetBool(r.Context(), "isAuthenticated")
-			tmpl.Execute(w, isAuthenticated)
-		})
-		r.Get("/register", func(w http.ResponseWriter, r *http.Request) {
-			tmpl := template.Must(template.ParseFiles(fp.Join(htmlDirPath, "register.html")))
-			tmpl.Execute(w, nil)
-		})
-		r.Get("/login", func(w http.ResponseWriter, r *http.Request) {
-			if sessionManager.GetBool(r.Context(), "isAuthenticated") {
-				http.Redirect(w, r, "/", http.StatusSeeOther)
-				return
-			}
-
-			tmpl := template.Must(template.ParseFiles(fp.Join(htmlDirPath, "login.html")))
-			tmpl.Execute(w, nil)
-		})
-		r.Get("/logout", func(w http.ResponseWriter, r *http.Request) {
-			sessionManager.RenewToken(r.Context())
-			sessionManager.Remove(r.Context(), "isAuthenticated")
-			http.Redirect(w, r, "/", http.StatusSeeOther)
-		})
-
-		r.Post("/register", Register)
+		r.Post("/register", RegisterPost)
 		r.Post("/login", LoginPost)
 
 		r.Group(func(r chi.Router) {
@@ -97,6 +83,33 @@ func main() {
 	})
 
 	http.ListenAndServe(":3001", r)
+}
+
+func newTemplateCache() (map[string]*template.Template, error) {
+	cache := map[string]*template.Template{}
+
+	pages, err := fp.Glob("./web/html/*.html")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, page := range pages {
+		name := fp.Base(page)
+
+		// add base template and any partials in the future
+		files := []string{
+			page,
+		}
+
+		ts, err := template.ParseFiles(files...)
+		if err != nil {
+			return nil, err
+		}
+
+		cache[name] = ts
+	}
+
+	return cache, nil
 }
 
 func FileServer(r chi.Router, path string, root http.FileSystem) {
@@ -118,7 +131,16 @@ func FileServer(r chi.Router, path string, root http.FileSystem) {
 	})
 }
 
+func Index(w http.ResponseWriter, r *http.Request) {
+	isAuthenticated := sessionManager.GetBool(r.Context(), "isAuthenticated")
+	templateCache["index.html"].Execute(w, isAuthenticated)
+}
+
 func Register(w http.ResponseWriter, r *http.Request) {
+	templateCache["register.html"].Execute(w, nil)
+}
+
+func RegisterPost(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	username := r.PostFormValue("username")
 	password := r.PostFormValue("password")
@@ -145,6 +167,15 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	_ = tag
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func Login(w http.ResponseWriter, r *http.Request) {
+	if sessionManager.GetBool(r.Context(), "isAuthenticated") {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	templateCache["login.html"].Execute(w, nil)
 }
 
 func LoginPost(w http.ResponseWriter, r *http.Request) {
@@ -180,6 +211,12 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+func Logout(w http.ResponseWriter, r *http.Request) {
+	sessionManager.RenewToken(r.Context())
+	sessionManager.Remove(r.Context(), "isAuthenticated")
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
 func UsersTable(w http.ResponseWriter, r *http.Request) {
 	dbPool, ok := r.Context().Value("dbpool").(*pgxpool.Pool)
 	if !ok {
@@ -196,8 +233,7 @@ func UsersTable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl := template.Must(template.ParseFiles(fp.Join(htmlDirPath, "usersTable.html")))
-	tmpl.Execute(w, users)
+	templateCache["usersTable.html"].Execute(w, users)
 }
 
 func Auth(next http.Handler) http.Handler {
