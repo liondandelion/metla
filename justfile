@@ -28,6 +28,9 @@ postgres-run:
 postgres-start:
     podman start postgres-metla
 
+postgres-shell:
+    podman exec -it postgres-metla bash
+
 psql:
     podman exec -it postgres-metla psql -U postgres
 
