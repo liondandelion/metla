@@ -63,7 +63,9 @@ func main() {
 
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			tmpl := template.Must(template.ParseFiles(fp.Join(htmlDirPath, "index.html")))
-			tmpl.Execute(w, nil)
+
+			isAuthenticated := sessionManager.GetBool(r.Context(), "isAuthenticated")
+			tmpl.Execute(w, isAuthenticated)
 		})
 		r.Get("/register", func(w http.ResponseWriter, r *http.Request) {
 			tmpl := template.Must(template.ParseFiles(fp.Join(htmlDirPath, "register.html")))
