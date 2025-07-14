@@ -34,10 +34,6 @@ postgres-shell:
 psql:
     podman exec -it postgres-metla psql -U postgres
 
-build:
-    gofmt -w ./cmd/metla/*.go
-    go build -o ./build/metla ./cmd/metla/
-
 db-create:
     podman exec postgres-metla psql -U postgres -c "create database metla;"
 
@@ -49,3 +45,11 @@ db-remove:
 
 install-tools:
     go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+
+build:
+    gofmt -w ./cmd/metla/*.go
+    go build -o ./build/metla ./cmd/metla/
+
+vet:
+    go vet ./...
+    staticcheck ./...

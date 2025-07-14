@@ -27,11 +27,7 @@ type User struct {
 	PasswordHash string
 }
 
-var (
-	assetsDirPath = "web"
-	cssDirPath    = fp.Join(assetsDirPath, "css")
-	htmlDirPath   = fp.Join(assetsDirPath, "html")
-)
+var assetsDirPath = "web"
 
 var sessionManager *scs.SessionManager
 var templateCache map[string]*template.Template
