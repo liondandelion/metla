@@ -84,7 +84,7 @@ func main() {
 func newTemplateCache() (map[string]*template.Template, error) {
 	cache := map[string]*template.Template{}
 
-	pages, err := fp.Glob("./web/html/*.html")
+	pages, err := fp.Glob("./ui/pages/*.html")
 	if err != nil {
 		return nil, err
 	}
@@ -92,12 +92,17 @@ func newTemplateCache() (map[string]*template.Template, error) {
 	for _, page := range pages {
 		name := fp.Base(page)
 
-		// add base template and any partials in the future
-		files := []string{
-			page,
+		ts, err := template.ParseFiles("./ui/base.html")
+		if err != nil {
+			return nil, err
 		}
 
-		ts, err := template.ParseFiles(files...)
+		//ts, err = ts.ParseGlob("./web/html/parts/*.html")
+		//if err != nil {
+		//	return nil, err
+		//}
+
+		ts, err = ts.ParseFiles(page)
 		if err != nil {
 			return nil, err
 		}
@@ -129,11 +134,11 @@ func FileServer(r chi.Router, path string, root http.FileSystem) {
 
 func Index(w http.ResponseWriter, r *http.Request) {
 	isAuthenticated := sessionManager.GetBool(r.Context(), "isAuthenticated")
-	templateCache["index.html"].Execute(w, isAuthenticated)
+	templateCache["index.html"].ExecuteTemplate(w, "base", isAuthenticated)
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
-	templateCache["register.html"].Execute(w, nil)
+	templateCache["register.html"].ExecuteTemplate(w, "base", nil)
 }
 
 func RegisterPost(w http.ResponseWriter, r *http.Request) {
@@ -171,7 +176,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templateCache["login.html"].Execute(w, nil)
+	templateCache["login.html"].ExecuteTemplate(w, "base", nil)
 }
 
 func LoginPost(w http.ResponseWriter, r *http.Request) {
@@ -229,7 +234,7 @@ func UsersTable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templateCache["usersTable.html"].Execute(w, users)
+	templateCache["usersTable.html"].ExecuteTemplate(w, "base", users)
 }
 
 func Auth(next http.Handler) http.Handler {

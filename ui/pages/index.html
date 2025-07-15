@@ -1,0 +1,37 @@
+{{define "title"}}
+Metla
+{{end}}
+
+{{define "main"}}
+<script src="/assets/js/third_party/maplibre-gl.js"></script>
+<link rel="stylesheet" type="text/css" href="/assets/css/third_party/maplibre-gl.css">
+
+<p>Website's map</p>
+<ul>
+    {{if $isAuthenticated := .}}
+        <li>
+            <a href="/logout">Logout</a>
+        </li>
+        <li>
+            <a href="/userstable">Print users table</a>
+        </li>
+    {{else}}
+        <li>
+            <a href="/register">Register</a>
+        </li>
+        <li>
+            <a href="/login">Login</a>
+        </li>
+    {{end}}
+</ul>
+
+<div id="map" style="height: 400px; width: 400px; margin: auto"></div>
+<script>
+    var map = new maplibregl.Map({
+        container: 'map', // container id
+        style: 'https://demotiles.maplibre.org/style.json', // style URL
+        center: [0, 0], // starting position [lng, lat]
+        zoom: 1 // starting zoom
+    });
+</script>
+{{end}}
