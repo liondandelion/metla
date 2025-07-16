@@ -193,13 +193,14 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 
 	sessionManager.RenewToken(r.Context())
 	sessionManager.Put(r.Context(), "isAuthenticated", true)
+	sessionManager.Put(r.Context(), "username", username)
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func Logout(w http.ResponseWriter, r *http.Request) {
 	sessionManager.RenewToken(r.Context())
-	sessionManager.Remove(r.Context(), "isAuthenticated")
+	sessionManager.Destroy(r.Context())
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
