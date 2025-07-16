@@ -61,6 +61,7 @@ func main() {
 
 	r.Group(func(r chi.Router) {
 		r.Use(sessionManager.LoadAndSave)
+		r.Use(UserExists)
 
 		r.Get("/", Index)
 		r.Get("/register", Register)
@@ -224,6 +225,31 @@ func Auth(next http.Handler) http.Handler {
 		}
 
 		w.Header().Add("Cache-Control", "no-store")
+		next.ServeHTTP(w, r)
+	})
+}
+
+func UserExists(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		username := sessionManager.GetString(r.Context(), "username")
+		if username == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		var exists bool
+		err := dbPool.QueryRow(context.Background(), "select exists (select 1 from users where username = $1)", username).Scan(&exists)
+		if err != nil {
+			log.Printf("Auth: failed to query or scan db: %v", err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if !exists {
+			Logout(w, r)
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }
