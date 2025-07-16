@@ -28,8 +28,8 @@ type User struct {
 }
 
 var assetsDirPath = "web"
-
 var sessionManager *scs.SessionManager
+var dbPool *pgxpool.Pool
 var templateCache map[string]*template.Template
 
 func main() {
@@ -43,7 +43,7 @@ func main() {
 		log.Fatalf("Main: unable to create template cache: %v\n", err)
 	}
 
-	dbPool, err := pgxpool.New(context.Background(), os.Getenv("POSTGRES_URL"))
+	dbPool, err = pgxpool.New(context.Background(), os.Getenv("POSTGRES_URL"))
 	if err != nil {
 		log.Fatalf("Main: unable to create connection pool: %v\n", err)
 	}
@@ -55,7 +55,6 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Use(middleware.WithValue("dbpool", dbPool))
 
 	assetsDir := http.Dir(assetsDirPath)
 	FileServer(r, "/assets", assetsDir)
@@ -154,13 +153,6 @@ func RegisterPost(w http.ResponseWriter, r *http.Request) {
 
 	hash, _ := hashPassword(password)
 
-	dbPool, ok := r.Context().Value("dbpool").(*pgxpool.Pool)
-	if !ok {
-		log.Println("Could not get dbpool out of context")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
 	tag, err := dbPool.Exec(context.Background(), "insert into users (username, password_hash) values ($1, $2)", username, hash)
 	if err != nil {
 		log.Printf("Register: failed to insert user: %v", err)
@@ -184,13 +176,6 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 	username := r.PostFormValue("username")
 	password := r.PostFormValue("password")
 	var passwordHash []byte
-
-	dbPool, ok := r.Context().Value("dbpool").(*pgxpool.Pool)
-	if !ok {
-		log.Println("Could not get dbpool out of context")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
 
 	err := dbPool.QueryRow(context.Background(), "select password_hash from users where username = $1", username).Scan(&passwordHash)
 	if err != nil {
@@ -219,13 +204,6 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func UsersTable(w http.ResponseWriter, r *http.Request) {
-	dbPool, ok := r.Context().Value("dbpool").(*pgxpool.Pool)
-	if !ok {
-		log.Println("Could not get dbpool out of context")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
 	rows, _ := dbPool.Query(context.Background(), "select * from users;")
 	users, err := pgx.CollectRows(rows, pgx.RowToStructByName[User])
 	if err != nil {
