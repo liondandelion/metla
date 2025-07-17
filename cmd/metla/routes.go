@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"html/template"
 	"log"
 	"net/http"
 	"strings"
@@ -66,6 +67,27 @@ func RegisterPost(w http.ResponseWriter, r *http.Request) {
 	_ = tag
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func RegisterExists(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	username := r.PostFormValue("username")
+
+	var exists bool
+	err := dbPool.QueryRow(context.Background(), "select exists (select 1 from users where username = $1)", username).Scan(&exists)
+	if err != nil {
+		log.Printf("RegisterExists: failed to query or scan db: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if exists {
+		t, _ := template.New("response").Parse(`<div id=error-exists>This user already exists</div>`)
+		t.Execute(w, nil)
+	} else {
+		t, _ := template.New("response").Parse(`<div id=error-exists></div>`)
+		t.Execute(w, nil)
+	}
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {

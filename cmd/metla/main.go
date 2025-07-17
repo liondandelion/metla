@@ -60,11 +60,14 @@ func main() {
 		r.Use(UserExists)
 
 		r.Get("/", Index)
-		r.Get("/register", Register)
+		r.Route("/register", func(r chi.Router) {
+			r.Get("/", Register)
+			r.Post("/", RegisterPost)
+			r.Post("/username", RegisterExists)
+		})
 		r.Get("/login", Login)
 		r.Get("/logout", Logout)
 
-		r.Post("/register", RegisterPost)
 		r.Post("/login", LoginPost)
 
 		r.Group(func(r chi.Router) {

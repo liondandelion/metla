@@ -6,16 +6,56 @@ Register
 <form action="/register" method="post" class="form">
     <div class="form">
         <label for="username">Enter your username: </label>
-        <input type="text" name="username" id="username" required>
+        <input type="text" name="username" id="username" required
+            hx-post="register/username" hx-target="#error-exists" hx-swap="outerHTML" hx-trigger="load, change, input delay:500ms"
+            _="on htmx:afterRequest or load
+            if the innerHTML of #error-exists is ''
+                send notExists to #btn-submit
+            else
+                send exists to #btn-submit"
+        />
     </div>
     <div class="form">
         <label for="password">Enter your password: </label>
-        <input type="password" name="password" id="password" required>
+        <input type="password" name="password" id="password" required />
     </div>
     <div class="form">
-        <input type="submit" value="Register">
+        <label for="confirm">Confirm password: </label>
+        <input type="password" name="confirm" id="confirm" required
+            _="on input or input from #password
+            if (my value is not '') and (the value of the #password is my value)
+                send matched to #btn-submit
+                send matched to #error-not-matched
+            else
+                send notMatched to #btn-submit
+                send notMatched to #error-not-matched"
+        />
+    </div>
+    <div class="form">
+        <input type="submit" value="Register" id="btn-submit" disabled
+            _="on load
+                if the innerHTML of #error-exists is not ''
+                    set :exists to true
+                else set :exists to false
+                set :matched to false then add @disabled
+            end
+            on exists add @disabled then set :exists to true end
+            on notMatched add @disabled then set :matched to false end
+            on notExists set :exists to false then if :matched then remove @disabled end
+            on matched set :matched to true then if not :exists then remove @disabled"
+        />
     </div>
 </form>
+
+<div id="error-exists"></div>
+
+<div id="error-not-matched"
+    _="init hide me end
+    on matched hide me end
+    on notMatched show me"
+>
+    Passwords should match
+</div>
 
 <a href="/">Back home</a>
 {{end}}
