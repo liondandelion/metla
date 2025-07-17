@@ -36,7 +36,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	isAuthenticated := sessionManager.GetBool(r.Context(), "isAuthenticated")
 	err := templateCache.pages["index.html"].ExecuteTemplate(w, "base", isAuthenticated)
 	if err != nil {
-		log.Printf("Register: failed to render: %v", err)
+		log.Printf("Index: failed to render: %v", err)
 	}
 }
 
@@ -62,7 +62,7 @@ func RegisterPost(w http.ResponseWriter, r *http.Request) {
 
 	tag, err := dbPool.Exec(context.Background(), "insert into users (username, password_hash) values ($1, $2)", username, hash)
 	if err != nil {
-		log.Printf("Register: failed to insert user: %v", err)
+		log.Printf("RegisterPost: failed to insert user: %v", err)
 	}
 	_ = tag
 
@@ -98,7 +98,10 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templateCache.pages["login.html"].ExecuteTemplate(w, "base", nil)
+	err := templateCache.pages["login.html"].ExecuteTemplate(w, "base", nil)
+	if err != nil {
+		log.Printf("Login: failed to render: %v", err)
+	}
 }
 
 func LoginPost(w http.ResponseWriter, r *http.Request) {
@@ -145,6 +148,6 @@ func UsersTable(w http.ResponseWriter, r *http.Request) {
 
 	err = templateCache.pages["usersTable.html"].ExecuteTemplate(w, "base", users)
 	if err != nil {
-		log.Printf("Register: failed to render: %v", err)
+		log.Printf("UsersTable: failed to render: %v", err)
 	}
 }
