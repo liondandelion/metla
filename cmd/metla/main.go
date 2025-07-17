@@ -23,10 +23,15 @@ type User struct {
 	PasswordHash string
 }
 
+type TemplateCache struct {
+	pages         map[string]*template.Template
+	htmxResponses map[string]*template.Template
+}
+
 var assetsDirPath = "web"
 var sessionManager *scs.SessionManager
 var dbPool *pgxpool.Pool
-var templateCache map[string]*template.Template
+var templateCache TemplateCache
 
 func main() {
 	err := godotenv.Load()
@@ -80,12 +85,15 @@ func main() {
 	http.ListenAndServe(":3001", r)
 }
 
-func newTemplateCache() (map[string]*template.Template, error) {
-	cache := map[string]*template.Template{}
+func newTemplateCache() (TemplateCache, error) {
+	cache := TemplateCache{
+		pages:         map[string]*template.Template{},
+		htmxResponses: map[string]*template.Template{},
+	}
 
 	pages, err := fp.Glob("./ui/pages/*.html")
 	if err != nil {
-		return nil, err
+		return cache, err
 	}
 
 	for _, page := range pages {
@@ -93,7 +101,7 @@ func newTemplateCache() (map[string]*template.Template, error) {
 
 		ts, err := template.ParseFiles("./ui/base.html")
 		if err != nil {
-			return nil, err
+			return cache, err
 		}
 
 		//ts, err = ts.ParseGlob("./ui/parts/*.html")
@@ -103,10 +111,26 @@ func newTemplateCache() (map[string]*template.Template, error) {
 
 		ts, err = ts.ParseFiles(page)
 		if err != nil {
-			return nil, err
+			return cache, err
 		}
 
-		cache[name] = ts
+		cache.pages[name] = ts
+	}
+
+	htmxResponses, err := fp.Glob("./ui/htmx/*.html")
+	if err != nil {
+		return cache, err
+	}
+
+	for _, htmx := range htmxResponses {
+		name := fp.Base(htmx)
+
+		ts, err := template.ParseFiles(htmx)
+		if err != nil {
+			return cache, err
+		}
+
+		cache.htmxResponses[name] = ts
 	}
 
 	return cache, nil

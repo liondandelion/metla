@@ -34,14 +34,14 @@ func FileServer(r chi.Router, path string, root http.FileSystem) {
 
 func Index(w http.ResponseWriter, r *http.Request) {
 	isAuthenticated := sessionManager.GetBool(r.Context(), "isAuthenticated")
-	err := templateCache["index.html"].ExecuteTemplate(w, "base", isAuthenticated)
+	err := templateCache.pages["index.html"].ExecuteTemplate(w, "base", isAuthenticated)
 	if err != nil {
 		log.Printf("Register: failed to render: %v", err)
 	}
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
-	err := templateCache["register.html"].ExecuteTemplate(w, "base", nil)
+	err := templateCache.pages["register.html"].ExecuteTemplate(w, "base", nil)
 	if err != nil {
 		log.Printf("Register: failed to render: %v", err)
 	}
@@ -96,7 +96,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	templateCache["login.html"].ExecuteTemplate(w, "base", nil)
+	templateCache.pages["login.html"].ExecuteTemplate(w, "base", nil)
 }
 
 func LoginPost(w http.ResponseWriter, r *http.Request) {
@@ -141,7 +141,7 @@ func UsersTable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = templateCache["usersTable.html"].ExecuteTemplate(w, "base", users)
+	err = templateCache.pages["usersTable.html"].ExecuteTemplate(w, "base", users)
 	if err != nil {
 		log.Printf("Register: failed to render: %v", err)
 	}
