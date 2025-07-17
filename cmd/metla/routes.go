@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"html/template"
+	_ "html/template"
 	"log"
 	"net/http"
 	"strings"
@@ -81,12 +81,14 @@ func RegisterExists(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var message string = ""
 	if exists {
-		t, _ := template.New("response").Parse(`<div id=error-exists>This user already exists</div>`)
-		t.Execute(w, nil)
-	} else {
-		t, _ := template.New("response").Parse(`<div id=error-exists></div>`)
-		t.Execute(w, nil)
+		message = "This user already exists"
+	}
+
+	err = templateCache.htmxResponses["register-exists.html"].Execute(w, message)
+	if err != nil {
+		log.Printf("RegisterExists: failed to render: %v", err)
 	}
 }
 
