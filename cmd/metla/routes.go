@@ -52,8 +52,9 @@ func RegisterPost(w http.ResponseWriter, r *http.Request) {
 	password := r.PostFormValue("password")
 
 	hash, _ := HashPassword(password)
+	isAdmin := false
 
-	tag, err := dbPool.Exec(context.Background(), "insert into users (username, password_hash) values ($1, $2)", username, hash)
+	tag, err := dbPool.Exec(context.Background(), "insert into users (username, password_hash, is_admin) values ($1, $2, $3)", username, hash, isAdmin)
 	if err != nil {
 		log.Printf("RegisterPost: failed to insert user: %v", err)
 	}

@@ -61,7 +61,6 @@ func main() {
 
 		r.Get("/", Index)
 		r.Get("/login", Login)
-		r.Get("/logout", Logout)
 
 		r.Post("/login", LoginPost)
 
@@ -74,12 +73,18 @@ func main() {
 		r.Group(func(r chi.Router) {
 			r.Use(Auth)
 
-			r.Get("/userstable", UsersTable)
+			r.Get("/logout", Logout)
 
 			r.Route("/user", func(r chi.Router) {
 				r.Get("/password", ChangePassword)
 				r.Post("/password", ChangePasswordPost)
 				r.Post("/password/check", CheckPassword)
+			})
+
+			r.Group(func(r chi.Router) {
+				r.Use(Admin)
+
+				r.Get("/userstable", UsersTable)
 			})
 		})
 	})
