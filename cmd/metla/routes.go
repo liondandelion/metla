@@ -7,10 +7,9 @@ import (
 	"net/http"
 	"strings"
 
-	"golang.org/x/crypto/bcrypt"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func FileServer(r chi.Router, path string, root http.FileSystem) {
@@ -52,13 +51,7 @@ func RegisterPost(w http.ResponseWriter, r *http.Request) {
 	username := r.PostFormValue("username")
 	password := r.PostFormValue("password")
 
-	hashPassword := func(password string) (string, error) {
-		/* encodedSaltSize = 22 bytes */
-		bytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
-		return string(bytes), err
-	}
-
-	hash, _ := hashPassword(password)
+	hash, _ := HashPassword(password)
 
 	tag, err := dbPool.Exec(context.Background(), "insert into users (username, password_hash) values ($1, $2)", username, hash)
 	if err != nil {
@@ -81,12 +74,21 @@ func RegisterExists(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var message string = ""
-	if exists {
-		message = "This user already exists"
+	type Data struct {
+		ErrorID string
+		Message string
 	}
 
-	err = templateCache.htmxResponses["register-exists.html"].Execute(w, message)
+	data := Data{
+		ErrorID: "error-exists",
+		Message: "",
+	}
+
+	if exists {
+		data.Message = "This user already exists"
+	}
+
+	err = templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
 	if err != nil {
 		log.Printf("RegisterExists: failed to render: %v", err)
 	}
@@ -149,5 +151,61 @@ func UsersTable(w http.ResponseWriter, r *http.Request) {
 	err = templateCache.pages["usersTable.html"].ExecuteTemplate(w, "base", users)
 	if err != nil {
 		log.Printf("UsersTable: failed to render: %v", err)
+	}
+}
+
+func ChangePassword(w http.ResponseWriter, r *http.Request) {
+	err := templateCache.pages["changePassword.html"].ExecuteTemplate(w, "base", nil)
+	if err != nil {
+		log.Printf("ChangePassword: failed to render: %v", err)
+	}
+}
+
+func ChangePasswordPost(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	username := sessionManager.GetString(r.Context(), "username")
+	newPassword := r.PostFormValue("newPassword")
+
+	newHash, _ := HashPassword(newPassword)
+
+	tag, err := dbPool.Exec(context.Background(), "update users set password_hash = $1 where username = $2", newHash, username)
+	if err != nil {
+		log.Printf("ChangePassword: failed: %v", err)
+	}
+	_ = tag
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func CheckPassword(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	username := sessionManager.GetString(r.Context(), "username")
+	oldPassword := r.PostFormValue("oldPassword")
+
+	var oldHashFromTable []byte
+
+	err := dbPool.QueryRow(context.Background(), "select password_hash from users where username = $1", username).Scan(&oldHashFromTable)
+	if err != nil {
+		log.Printf("CheckPassword: failed to get old hash: %v", err)
+	}
+
+	type Data struct {
+		ErrorID string
+		Message string
+	}
+
+	data := Data{
+		ErrorID: "error-wrong",
+		Message: "",
+	}
+
+	err = bcrypt.CompareHashAndPassword(oldHashFromTable, []byte(oldPassword))
+	if err != nil {
+		data.Message = "Old password is wrong"
+	}
+
+	err = templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
+	if err != nil {
+		log.Printf("CheckPassword: failed to render: %v", err)
 	}
 }

@@ -9,13 +9,13 @@ import (
 	fp "path/filepath"
 	"time"
 
-	"github.com/joho/godotenv"
-
 	"github.com/alexedwards/scs/pgxstore"
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -65,20 +65,27 @@ func main() {
 		r.Use(UserExists)
 
 		r.Get("/", Index)
-		r.Route("/register", func(r chi.Router) {
-			r.Get("/", Register)
-			r.Post("/", RegisterPost)
-			r.Post("/username", RegisterExists)
-		})
 		r.Get("/login", Login)
 		r.Get("/logout", Logout)
 
 		r.Post("/login", LoginPost)
 
+		r.Route("/register", func(r chi.Router) {
+			r.Get("/", Register)
+			r.Post("/", RegisterPost)
+			r.Post("/username", RegisterExists)
+		})
+
 		r.Group(func(r chi.Router) {
 			r.Use(Auth)
 
 			r.Get("/userstable", UsersTable)
+
+			r.Route("/user", func(r chi.Router) {
+				r.Get("/password", ChangePassword)
+				r.Post("/password", ChangePasswordPost)
+				r.Post("/password/check", CheckPassword)
+			})
 		})
 	})
 
@@ -134,4 +141,10 @@ func newTemplateCache() (TemplateCache, error) {
 	}
 
 	return cache, nil
+}
+
+func HashPassword(password string) (string, error) {
+	/* encodedSaltSize = 22 bytes */
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
+	return string(bytes), err
 }
