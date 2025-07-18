@@ -113,7 +113,28 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 	password := r.PostFormValue("password")
 	var passwordHash []byte
 
-	err := dbPool.QueryRow(context.Background(), "select password_hash from users where username = $1", username).Scan(&passwordHash)
+	data := ErrorData{
+		ErrorID: "error-invalid",
+	}
+
+	var exists bool
+	err := dbPool.QueryRow(context.Background(), "select exists (select 1 from users where username = $1)", username).Scan(&exists)
+	if err != nil {
+		log.Printf("LoginPost: failed to query or scan db: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if !exists {
+		data.Message = "Invalid username"
+		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
+		if err != nil {
+			log.Printf("LoginPost: failed to render: %v", err)
+		}
+		return
+	}
+
+	err = dbPool.QueryRow(context.Background(), "select password_hash from users where username = $1", username).Scan(&passwordHash)
 	if err != nil {
 		log.Printf("LoginPost: failed to query or scan db: %v", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -122,8 +143,11 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 
 	err = bcrypt.CompareHashAndPassword(passwordHash, []byte(password))
 	if err != nil {
-		log.Printf("LoginPost: invalid password: %v", err)
-		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		data.Message = "Invalid password"
+		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
+		if err != nil {
+			log.Printf("LoginPost: failed to render: %v", err)
+		}
 		return
 	}
 
@@ -131,7 +155,9 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 	sessionManager.Put(r.Context(), "isAuthenticated", true)
 	sessionManager.Put(r.Context(), "username", username)
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	h := w.Header()
+	h.Set("HX-Redirect", "/")
+	w.WriteHeader(http.StatusOK)
 }
 
 func Logout(w http.ResponseWriter, r *http.Request) {
