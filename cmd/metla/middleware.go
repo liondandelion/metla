@@ -29,7 +29,7 @@ func UserExists(next http.Handler) http.Handler {
 		var exists bool
 		err := dbPool.QueryRow(context.Background(), "select exists (select 1 from users where username = $1)", username).Scan(&exists)
 		if err != nil {
-			log.Printf("Auth: failed to query or scan db: %v", err)
+			log.Printf("UserExists: failed to query or scan db: %v", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
