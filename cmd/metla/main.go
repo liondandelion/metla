@@ -18,11 +18,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type User struct {
-	Username     string
-	PasswordHash string
-}
-
 type TemplateCache struct {
 	pages         map[string]*template.Template
 	htmxResponses map[string]*template.Template

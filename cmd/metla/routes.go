@@ -140,6 +140,12 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func UsersTable(w http.ResponseWriter, r *http.Request) {
+	type User struct {
+		Username     string
+		PasswordHash string
+		IsAdmin      bool
+	}
+
 	rows, _ := dbPool.Query(context.Background(), "select * from users;")
 	users, err := pgx.CollectRows(rows, pgx.RowToStructByName[User])
 	if err != nil {
