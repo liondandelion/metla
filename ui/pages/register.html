@@ -7,7 +7,7 @@ Register
     <div class="form">
         <label for="username">Enter your username: </label>
         <input type="text" name="username" id="username" required
-            hx-post="register/username" hx-target="#error-exists" hx-swap="outerHTML" hx-trigger="load, change, input delay:500ms"
+            hx-post="/register/username" hx-target="#error-exists" hx-swap="outerHTML" hx-trigger="load, change, input delay:500ms"
             _="on htmx:afterRequest or load
             if the innerHTML of #error-exists is ''
                 send notExists to #btn-submit
