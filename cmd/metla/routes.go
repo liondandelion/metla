@@ -180,6 +180,8 @@ func ChangePasswordPost(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = tag
 
+	sessionManager.RenewToken(r.Context())
+
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
