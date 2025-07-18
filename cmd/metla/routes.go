@@ -12,6 +12,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type ErrorData struct {
+	ErrorID string
+	Message string
+}
+
 func FileServer(r chi.Router, path string, root http.FileSystem) {
 	if strings.ContainsAny(path, "{}*") {
 		panic("FileServer: no URL params allowed")
@@ -75,12 +80,7 @@ func RegisterExists(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	type Data struct {
-		ErrorID string
-		Message string
-	}
-
-	data := Data{
+	data := ErrorData{
 		ErrorID: "error-exists",
 		Message: "",
 	}
@@ -198,12 +198,7 @@ func CheckPassword(w http.ResponseWriter, r *http.Request) {
 		log.Printf("CheckPassword: failed to get old hash: %v", err)
 	}
 
-	type Data struct {
-		ErrorID string
-		Message string
-	}
-
-	data := Data{
+	data := ErrorData{
 		ErrorID: "error-wrong",
 		Message: "",
 	}
