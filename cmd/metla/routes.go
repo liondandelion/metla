@@ -166,9 +166,7 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 	sessionManager.Put(r.Context(), "isAuthenticated", true)
 	sessionManager.Put(r.Context(), "username", username)
 
-	h := w.Header()
-	h.Set("HX-Redirect", "/")
-	w.WriteHeader(http.StatusOK)
+	HTMXRedirect(w, "/")
 }
 
 func Logout(w http.ResponseWriter, r *http.Request) {
