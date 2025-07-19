@@ -143,8 +143,8 @@ func newTemplateCache() (TemplateCache, error) {
 	return cache, nil
 }
 
-func HashPassword(password string) (string, error) {
+func HashPassword(password []byte) ([]byte, error) {
 	/* encodedSaltSize = 22 bytes */
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
-	return string(bytes), err
+	return bytes, err
 }

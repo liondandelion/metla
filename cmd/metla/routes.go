@@ -54,7 +54,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 func RegisterPost(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	username := r.PostFormValue("username")
-	password := r.PostFormValue("password")
+	password := []byte(r.PostFormValue("password"))
 
 	hash, _ := HashPassword(password)
 	isAdmin := false
@@ -110,7 +110,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 func LoginPost(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	username := r.PostFormValue("username")
-	password := r.PostFormValue("password")
+	password := []byte(r.PostFormValue("password"))
 	var passwordHash []byte
 
 	data := ErrorData{
@@ -141,7 +141,7 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = bcrypt.CompareHashAndPassword(passwordHash, []byte(password))
+	err = bcrypt.CompareHashAndPassword(passwordHash, password)
 	if err != nil {
 		data.Message = "Invalid password"
 		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
@@ -169,7 +169,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 func UsersTable(w http.ResponseWriter, r *http.Request) {
 	type User struct {
 		Username     string
-		PasswordHash string
+		PasswordHash []byte
 		IsAdmin      bool
 	}
 
@@ -197,7 +197,7 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 func ChangePasswordPost(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	username := sessionManager.GetString(r.Context(), "username")
-	newPassword := r.PostFormValue("newPassword")
+	newPassword := []byte(r.PostFormValue("newPassword"))
 
 	newHash, _ := HashPassword(newPassword)
 
@@ -215,7 +215,7 @@ func ChangePasswordPost(w http.ResponseWriter, r *http.Request) {
 func CheckPassword(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	username := sessionManager.GetString(r.Context(), "username")
-	oldPassword := r.PostFormValue("oldPassword")
+	oldPassword := []byte(r.PostFormValue("oldPassword"))
 
 	var oldHashFromTable []byte
 
@@ -229,7 +229,7 @@ func CheckPassword(w http.ResponseWriter, r *http.Request) {
 		Message: "",
 	}
 
-	err = bcrypt.CompareHashAndPassword(oldHashFromTable, []byte(oldPassword))
+	err = bcrypt.CompareHashAndPassword(oldHashFromTable, oldPassword)
 	if err != nil {
 		data.Message = "Old password is wrong"
 	}
