@@ -9,12 +9,12 @@ Metla
 <p>Website's map</p>
 <nav>
     <ul>
-        {{if $isAuthenticated := .}}
+        {{if .IsAuthenticated}}
             <li>
-                <a href="/logout">Logout</a>
+                <a href="/user">Profile</a>
             </li>
             <li>
-                <a href="/user/password">Change password</a>
+                <a href="/logout">Logout</a>
             </li>
             <li>
                 <a href="/userstable">Print users table</a>

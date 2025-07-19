@@ -1,0 +1,21 @@
+
+Implementation of block cipher Kuznyechik, GOST R 34.12-2015, with
+assembly optimizations for arm64 and amd64. Package is gosthp.
+
+Works for go 1.7 and above, 1.18 (and above) recommended - see go.mod.
+
+---
+
+Example build:
+
+$ cd cmd
+$ go build gostrun.go
+
+---
+
+Use gosthp/ as a Go package. For older Go compilers - copy gosthp/
+to appropriate dir ($GOPATH, etc).
+See gosthp/gosthp.go for details.
+
+https://dxdt.ru/
+https://dxdt.ru/2024/01/02/12066/

@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"crypto/cipher"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 	fp "path/filepath"
+	"thirdparty/gosthp/gosthp"
 	"time"
 
 	"github.com/alexedwards/scs/pgxstore"
@@ -27,6 +29,7 @@ var assetsDirPath = "web"
 var sessionManager *scs.SessionManager
 var dbPool *pgxpool.Pool
 var templateCache TemplateCache
+var ghGCM cipher.AEAD
 
 func main() {
 	err := godotenv.Load()
@@ -48,6 +51,20 @@ func main() {
 	sessionManager = scs.New()
 	sessionManager.Store = pgxstore.New(dbPool)
 	sessionManager.Lifetime = 12 * time.Hour
+
+	gosthp.InitCipher()
+	symKey, err := os.ReadFile(os.Getenv("SYM_KEY_FILEPATH"))
+	if err != nil {
+		log.Fatalf("Main: unable to read symmetrical key: %v\n", err)
+	}
+	gh, err := gosthp.NewCipher(symKey)
+	if err != nil {
+		log.Fatalf("Main: unable to create cipher: %v\n", err)
+	}
+	ghGCM, err = cipher.NewGCM(gh)
+	if err != nil {
+		log.Fatalf("Main: unable to create GCM mode: %v\n", err)
+	}
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -76,9 +93,14 @@ func main() {
 			r.Get("/logout", Logout)
 
 			r.Route("/user", func(r chi.Router) {
+				r.Get("/", User)
 				r.Get("/password", ChangePassword)
 				r.Post("/password", ChangePasswordPost)
 				r.Post("/password/check", CheckPassword)
+
+				r.Get("/otp/enable", EnableOTP)
+				r.Get("/otp/disable", DisableOTP)
+				r.Post("/otp/enable", EnableOTPPost)
 			})
 
 			r.Group(func(r chi.Router) {
@@ -147,4 +169,10 @@ func HashPassword(password []byte) ([]byte, error) {
 	/* encodedSaltSize = 22 bytes */
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
 	return bytes, err
+}
+
+func HTMXRedirect(w http.ResponseWriter, path string) {
+	h := w.Header()
+	h.Set("HX-Redirect", path)
+	w.WriteHeader(http.StatusOK)
 }

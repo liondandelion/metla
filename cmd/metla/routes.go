@@ -1,14 +1,19 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	_ "html/template"
+	"image/png"
 	"log"
 	"net/http"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
+	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -37,8 +42,14 @@ func FileServer(r chi.Router, path string, root http.FileSystem) {
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
-	isAuthenticated := sessionManager.GetBool(r.Context(), "isAuthenticated")
-	err := templateCache.pages["index.html"].ExecuteTemplate(w, "base", isAuthenticated)
+	data := struct {
+		IsAuthenticated bool
+		IsOTPEnabled    bool
+	}{
+		IsAuthenticated: sessionManager.GetBool(r.Context(), "isAuthenticated"),
+	}
+
+	err := templateCache.pages["index.html"].ExecuteTemplate(w, "base", data)
 	if err != nil {
 		log.Printf("Index: failed to render: %v", err)
 	}
@@ -187,6 +198,21 @@ func UsersTable(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func User(w http.ResponseWriter, r *http.Request) {
+	data := struct {
+		IsAuthenticated bool
+		IsOTPEnabled    bool
+	}{
+		IsAuthenticated: sessionManager.GetBool(r.Context(), "isAuthenticated"),
+		IsOTPEnabled:    sessionManager.GetBool(r.Context(), "isOTPEnabled"),
+	}
+
+	err := templateCache.pages["user.html"].ExecuteTemplate(w, "base", data)
+	if err != nil {
+		log.Printf("UsersTable: failed to render: %v", err)
+	}
+}
+
 func ChangePassword(w http.ResponseWriter, r *http.Request) {
 	err := templateCache.pages["changePassword.html"].ExecuteTemplate(w, "base", nil)
 	if err != nil {
@@ -238,4 +264,95 @@ func CheckPassword(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("CheckPassword: failed to render: %v", err)
 	}
+}
+
+func EnableOTP(w http.ResponseWriter, r *http.Request) {
+	username := sessionManager.GetString(r.Context(), "username")
+
+	totpOpts := totp.GenerateOpts{
+		Issuer:      "metla.com",
+		AccountName: username,
+	}
+	key, err := totp.Generate(totpOpts)
+
+	var buf bytes.Buffer
+	img, err := key.Image(200, 200)
+	png.Encode(&buf, img)
+	imgBase64 := base64.StdEncoding.EncodeToString(buf.Bytes())
+
+	data := struct {
+		Service  string
+		Username string
+		Secret   string
+		Image    string
+	}{
+		Service:  key.Issuer(),
+		Username: key.AccountName(),
+		Secret:   key.Secret(),
+		Image:    imgBase64,
+	}
+
+	// TODO: is it more likely to repeat than random?
+	nonce := sha256.Sum256([]byte(username))
+	secretEnc := ghGCM.Seal(nil, nonce[:12], []byte(data.Secret), nil)
+	sessionManager.Put(r.Context(), "otpSecret", secretEnc)
+
+	err = templateCache.pages["enableOTP.html"].ExecuteTemplate(w, "base", data)
+	if err != nil {
+		log.Printf("EnableOTP: failed to render: %v", err)
+	}
+}
+
+func EnableOTPPost(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	otpCode := r.PostFormValue("otpCode")
+	otpSecretEnc := sessionManager.PopBytes(r.Context(), "otpSecret")
+	username := sessionManager.GetString(r.Context(), "username")
+	nonce := sha256.Sum256([]byte(username))
+
+	otpSecretB, err := ghGCM.Open(nil, nonce[:12], otpSecretEnc, nil)
+	if err != nil {
+		log.Printf("EnableOTPPost: failed to open: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	otpSecret := string(otpSecretB)
+
+	valid := totp.Validate(otpCode, otpSecret)
+
+	data := ErrorData{
+		ErrorID: "errorInvalid",
+		Message: "",
+	}
+
+	if !valid {
+		data.Message = "The code is invalid, try enrolling again in your app"
+		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
+		if err != nil {
+			log.Printf("EnableOTPPost: failed to render: %v", err)
+		}
+		return
+	}
+
+	_, err = dbPool.Exec(context.Background(), "insert into otp (username, otp) values ($1, $2)", username, otpSecret)
+	if err != nil {
+		log.Printf("EnableOTPPost: failed to insert otp: %v", err)
+	}
+
+	sessionManager.RenewToken(r.Context())
+
+	HTMXRedirect(w, "/")
+}
+
+func DisableOTP(w http.ResponseWriter, r *http.Request) {
+	username := sessionManager.GetString(r.Context(), "username")
+
+	_, err := dbPool.Exec(context.Background(), "delete from otp where username = $1", username)
+	if err != nil {
+		log.Printf("DisableOTP: failed to delete row: %v", err)
+	}
+
+	sessionManager.RenewToken(r.Context())
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
