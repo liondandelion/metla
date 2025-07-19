@@ -343,7 +343,7 @@ func OTPEnablePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = dbPool.Exec(context.Background(), "insert into otp (username, otp) values ($1, $2)", username, otpSecret)
+	_, err = dbPool.Exec(context.Background(), "insert into otp (username, otp) values ($1, $2)", username, otpSecretEnc)
 	if err != nil {
 		log.Printf("OTPEnablePost: failed to insert otp: %v", err)
 	}
