@@ -213,14 +213,14 @@ func User(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func ChangePassword(w http.ResponseWriter, r *http.Request) {
+func PasswordChange(w http.ResponseWriter, r *http.Request) {
 	err := templateCache.pages["changePassword.html"].ExecuteTemplate(w, "base", nil)
 	if err != nil {
-		log.Printf("ChangePassword: failed to render: %v", err)
+		log.Printf("PasswordChange: failed to render: %v", err)
 	}
 }
 
-func ChangePasswordPost(w http.ResponseWriter, r *http.Request) {
+func PasswordChangePost(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	username := sessionManager.GetString(r.Context(), "username")
 	newPassword := []byte(r.PostFormValue("newPassword"))
@@ -229,7 +229,7 @@ func ChangePasswordPost(w http.ResponseWriter, r *http.Request) {
 
 	tag, err := dbPool.Exec(context.Background(), "update users set password_hash = $1 where username = $2", newHash, username)
 	if err != nil {
-		log.Printf("ChangePassword: failed: %v", err)
+		log.Printf("PasswordChangePost: failed: %v", err)
 	}
 	_ = tag
 
@@ -238,7 +238,7 @@ func ChangePasswordPost(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-func CheckPassword(w http.ResponseWriter, r *http.Request) {
+func PasswordCheck(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	username := sessionManager.GetString(r.Context(), "username")
 	oldPassword := []byte(r.PostFormValue("oldPassword"))
@@ -247,7 +247,7 @@ func CheckPassword(w http.ResponseWriter, r *http.Request) {
 
 	err := dbPool.QueryRow(context.Background(), "select password_hash from users where username = $1", username).Scan(&oldHashFromTable)
 	if err != nil {
-		log.Printf("CheckPassword: failed to get old hash: %v", err)
+		log.Printf("PasswordCheck: failed to get old hash: %v", err)
 	}
 
 	data := ErrorData{
@@ -262,11 +262,11 @@ func CheckPassword(w http.ResponseWriter, r *http.Request) {
 
 	err = templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
 	if err != nil {
-		log.Printf("CheckPassword: failed to render: %v", err)
+		log.Printf("PasswordCheck: failed to render: %v", err)
 	}
 }
 
-func EnableOTP(w http.ResponseWriter, r *http.Request) {
+func OTPEnable(w http.ResponseWriter, r *http.Request) {
 	username := sessionManager.GetString(r.Context(), "username")
 
 	totpOpts := totp.GenerateOpts{
@@ -299,11 +299,11 @@ func EnableOTP(w http.ResponseWriter, r *http.Request) {
 
 	err = templateCache.pages["enableOTP.html"].ExecuteTemplate(w, "base", data)
 	if err != nil {
-		log.Printf("EnableOTP: failed to render: %v", err)
+		log.Printf("OTPEnable: failed to render: %v", err)
 	}
 }
 
-func EnableOTPPost(w http.ResponseWriter, r *http.Request) {
+func OTPEnablePost(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	otpCode := r.PostFormValue("otpCode")
 	otpSecretEnc := sessionManager.PopBytes(r.Context(), "otpSecret")
@@ -312,7 +312,7 @@ func EnableOTPPost(w http.ResponseWriter, r *http.Request) {
 
 	otpSecretB, err := ghGCM.Open(nil, nonce[:12], otpSecretEnc, nil)
 	if err != nil {
-		log.Printf("EnableOTPPost: failed to open: %v", err)
+		log.Printf("OTPEnablePost: failed to open: %v", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -329,14 +329,14 @@ func EnableOTPPost(w http.ResponseWriter, r *http.Request) {
 		data.Message = "The code is invalid, try enrolling again in your app"
 		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
 		if err != nil {
-			log.Printf("EnableOTPPost: failed to render: %v", err)
+			log.Printf("OTPEnablePost: failed to render: %v", err)
 		}
 		return
 	}
 
 	_, err = dbPool.Exec(context.Background(), "insert into otp (username, otp) values ($1, $2)", username, otpSecret)
 	if err != nil {
-		log.Printf("EnableOTPPost: failed to insert otp: %v", err)
+		log.Printf("OTPEnablePost: failed to insert otp: %v", err)
 	}
 
 	sessionManager.RenewToken(r.Context())
@@ -344,12 +344,12 @@ func EnableOTPPost(w http.ResponseWriter, r *http.Request) {
 	HTMXRedirect(w, "/")
 }
 
-func DisableOTP(w http.ResponseWriter, r *http.Request) {
+func OTPDisable(w http.ResponseWriter, r *http.Request) {
 	username := sessionManager.GetString(r.Context(), "username")
 
 	_, err := dbPool.Exec(context.Background(), "delete from otp where username = $1", username)
 	if err != nil {
-		log.Printf("DisableOTP: failed to delete row: %v", err)
+		log.Printf("OTPDisable: failed to delete row: %v", err)
 	}
 
 	sessionManager.RenewToken(r.Context())

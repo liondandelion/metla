@@ -94,13 +94,13 @@ func main() {
 
 			r.Route("/user", func(r chi.Router) {
 				r.Get("/", User)
-				r.Get("/password", ChangePassword)
-				r.Post("/password", ChangePasswordPost)
-				r.Post("/password/check", CheckPassword)
+				r.Get("/password", PasswordChange)
+				r.Post("/password", PasswordChangePost)
+				r.Post("/password/check", PasswordCheck)
 
-				r.Get("/otp/enable", EnableOTP)
-				r.Get("/otp/disable", DisableOTP)
-				r.Post("/otp/enable", EnableOTPPost)
+				r.Get("/otp/enable", OTPEnable)
+				r.Get("/otp/disable", OTPDisable)
+				r.Post("/otp/enable", OTPEnablePost)
 			})
 
 			r.Group(func(r chi.Router) {
