@@ -272,11 +272,22 @@ func OTPEnable(w http.ResponseWriter, r *http.Request) {
 		AccountName: username,
 	}
 	key, err := totp.Generate(totpOpts)
+	if err != nil {
+		log.Printf("OTPEnable: failed to generate key: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 
 	var buf bytes.Buffer
+	var imgBase64 string
 	img, err := key.Image(200, 200)
-	png.Encode(&buf, img)
-	imgBase64 := base64.StdEncoding.EncodeToString(buf.Bytes())
+	if err != nil {
+		log.Printf("OTPEnable: failed to generate image: %v", err)
+
+	} else {
+		png.Encode(&buf, img)
+		imgBase64 = base64.StdEncoding.EncodeToString(buf.Bytes())
+	}
 
 	data := struct {
 		Service  string
