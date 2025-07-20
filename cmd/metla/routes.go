@@ -89,7 +89,7 @@ func RegisterExists(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		ErrorID, Message string
 	}{
-		ErrorID: "error-exists",
+		ErrorID: "errorExists",
 		Message: "",
 	}
 
@@ -132,7 +132,7 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		ErrorID, Message string
 	}{
-		ErrorID: "error-invalid",
+		ErrorID: "errorInvalid",
 	}
 
 	if !exists {
@@ -307,7 +307,7 @@ func PasswordCheck(w http.ResponseWriter, r *http.Request) {
 	data := struct {
 		ErrorID, Message string
 	}{
-		ErrorID: "error-wrong",
+		ErrorID: "errorWrong",
 		Message: "",
 	}
 

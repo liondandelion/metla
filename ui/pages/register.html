@@ -7,9 +7,9 @@ Register
     <div class="form">
         <label for="username">Enter your username: </label>
         <input type="text" name="username" id="username" required
-            hx-post="/register/username" hx-target="#error-exists" hx-swap="outerHTML" hx-trigger="load, change, input delay:500ms"
+            hx-post="/register/username" hx-target="#errorExists" hx-swap="outerHTML" hx-trigger="load, change, input delay:500ms"
             _="on htmx:afterRequest or load
-            if the innerHTML of #error-exists is ''
+            if the innerHTML of #errorExists is ''
                 send notExists to #btn-submit
             else
                 send exists to #btn-submit"
@@ -25,16 +25,16 @@ Register
             _="on input or input from #password
             if (my value is not '') and (the value of the #password is my value)
                 send matched to #btn-submit
-                send matched to #error-not-matched
+                send matched to #errorNotMatched
             else
                 send notMatched to #btn-submit
-                send notMatched to #error-not-matched"
+                send notMatched to #errorNotMatched"
         />
     </div>
     <div class="form">
         <input type="submit" value="Register" id="btn-submit" disabled
             _="on load
-                if the innerHTML of #error-exists is not ''
+                if the innerHTML of #errorExists is not ''
                     set :exists to true
                 else set :exists to false
                 set :matched to false then add @disabled
@@ -47,9 +47,9 @@ Register
     </div>
 </form>
 
-<div id="error-exists"></div>
+<div id="errorExists"></div>
 
-<div id="error-not-matched"
+<div id="errorNotMatched"
     _="init hide me end
     on matched hide me end
     on notMatched show me"
