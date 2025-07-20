@@ -1,17 +1,71 @@
-form.form {
-  display: table;
+html {
+    margin-right: 10px;
+    margin-left: 10px;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding: 0;
 }
 
-div.form {
-  display: table-row;
+body {
+    margin: 0;
+    padding: 0;
 }
 
-label,
-input {
-  display: table-cell;
-  margin-bottom: 10px;
+.form {
+    form {
+        display: table;
+    }
+
+    div {
+        display: table-row;
+    }
+
+    label, input {
+        display: table-cell;
+        margin-bottom: 10px;
+    }
+
+    label {
+        padding-right: 10px;
+    }
 }
 
-label {
-  padding-right: 10px;
+header {
+    height: auto;
+    width: 99%;
+    position: sticky;
+    top: 0;
+    left: 0;
+    padding-left: 10px;
+    padding-right: 10px;
+    z-index: 100;
+    background-color: white;
+
+    nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        a {
+            flex: 1;
+            text-decoration: none;
+        }
+
+        div {
+            flex: 2;
+        }
+
+        ul {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            li {
+                flex: 1 0 auto;
+                list-style: none;
+                text-align: center;
+            }
+        }
+    }
 }

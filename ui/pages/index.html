@@ -6,12 +6,12 @@ Metla
 <script src="/assets/js/third_party/maplibre-gl.js"></script>
 <link rel="stylesheet" type="text/css" href="/assets/css/third_party/maplibre-gl.css">
 
-<div style="height: 95vh; width: 100%; display: flex; flex-flow: column;">
-    <div style="flex: 1; max-height: 200px;">
-        <p>Website's map</p>
-        <nav>
-            <ul>
-                {{if .IsAuthenticated}}
+<header>
+    <nav>
+        <a href="/">Metla</a>
+        <div></div>
+        <ul>
+            {{if .IsAuthenticated}}
                 <li>
                     <a href="/user">Profile</a>
                 </li>
@@ -21,19 +21,19 @@ Metla
                 <li>
                     <a href="/userstable">Print users table</a>
                 </li>
-                {{else}}
+            {{else}}
                 <li>
                     <a href="/register">Register</a>
                 </li>
                 <li>
                     <a href="/login">Login</a>
                 </li>
-                {{end}}
-            </ul>
-        </nav>
-    </div>
-    <div id="map" style="width: 100%; margin: auto; flex: 3 400px;"></div>
-</div>
+            {{end}}
+        </ul>
+    </nav>
+</header>
+
+<div id="map" style="height: 600px; margin: auto;"></div>
 
 <script>
     var map = new maplibregl.Map({
