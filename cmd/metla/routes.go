@@ -17,11 +17,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type ErrorData struct {
-	ErrorID string
-	Message string
-}
-
 func FileServer(r chi.Router, path string, root http.FileSystem) {
 	if strings.ContainsAny(path, "{}*") {
 		panic("FileServer: no URL params allowed")
@@ -91,7 +86,9 @@ func RegisterExists(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := ErrorData{
+	data := struct {
+		ErrorID, Message string
+	}{
 		ErrorID: "error-exists",
 		Message: "",
 	}
@@ -132,11 +129,14 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	data := struct {
+		ErrorID, Message string
+	}{
+		ErrorID: "error-invalid",
+	}
+
 	if !exists {
-		data := ErrorData{
-			ErrorID: "error-invalid",
-			Message: "Invalid username",
-		}
+		data.Message = "Invalid username"
 		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
 		if err != nil {
 			log.Printf("LoginPost: failed to render: %v", err)
@@ -153,10 +153,7 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 
 	err = bcrypt.CompareHashAndPassword(passwordHash, password)
 	if err != nil {
-		data := ErrorData{
-			ErrorID: "error-invalid",
-			Message: "Invalid password",
-		}
+		data.Message = "Invalid password"
 		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
 		if err != nil {
 			log.Printf("LoginPost: failed to render: %v", err)
@@ -210,7 +207,9 @@ func LoginOTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !valid {
-		data := ErrorData{
+		data := struct {
+			ErrorID, Message string
+		}{
 			ErrorID: "errorInvalid",
 			Message: "The code is invalid",
 		}
@@ -305,7 +304,9 @@ func PasswordCheck(w http.ResponseWriter, r *http.Request) {
 		log.Printf("PasswordCheck: failed to get old hash: %v", err)
 	}
 
-	data := ErrorData{
+	data := struct {
+		ErrorID, Message string
+	}{
 		ErrorID: "error-wrong",
 		Message: "",
 	}
@@ -386,7 +387,9 @@ func OTPEnablePost(w http.ResponseWriter, r *http.Request) {
 
 	valid := totp.Validate(otpCode, otpSecret)
 
-	data := ErrorData{
+	data := struct {
+		ErrorID, Message string
+	}{
 		ErrorID: "errorInvalid",
 		Message: "",
 	}
