@@ -13,22 +13,6 @@ func Auth(next http.Handler) http.Handler {
 			return
 		}
 
-		username := sessionManager.GetString(r.Context(), "username")
-
-		var exists bool
-		err := dbPool.QueryRow(context.Background(), "select exists (select 1 from otp where username = $1)", username).Scan(&exists)
-		if err != nil {
-			log.Printf("Auth: failed to query or scan db: %v", err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-
-		if exists {
-			sessionManager.Put(r.Context(), "isOTPEnabled", true)
-		} else {
-			sessionManager.Put(r.Context(), "isOTPEnabled", false)
-		}
-
 		w.Header().Add("Cache-Control", "no-store")
 		next.ServeHTTP(w, r)
 	})
@@ -56,7 +40,7 @@ func Admin(next http.Handler) http.Handler {
 	})
 }
 
-func UserExists(next http.Handler) http.Handler {
+func UserInfo(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		username := sessionManager.GetString(r.Context(), "username")
 		if username == "" {
@@ -67,7 +51,7 @@ func UserExists(next http.Handler) http.Handler {
 		var exists bool
 		err := dbPool.QueryRow(context.Background(), "select exists (select 1 from users where username = $1)", username).Scan(&exists)
 		if err != nil {
-			log.Printf("UserExists: failed to query or scan db: %v", err)
+			log.Printf("UserInfo: failed to query or scan db: %v", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
@@ -75,6 +59,19 @@ func UserExists(next http.Handler) http.Handler {
 		if !exists {
 			Logout(w, r)
 			return
+		}
+
+		err = dbPool.QueryRow(context.Background(), "select exists (select 1 from otp where username = $1)", username).Scan(&exists)
+		if err != nil {
+			log.Printf("UserInfo: failed to query or scan db: %v", err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if exists {
+			sessionManager.Put(r.Context(), "isOTPEnabled", true)
+		} else {
+			sessionManager.Put(r.Context(), "isOTPEnabled", false)
 		}
 
 		next.ServeHTTP(w, r)

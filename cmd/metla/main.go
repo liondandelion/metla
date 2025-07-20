@@ -74,7 +74,7 @@ func main() {
 
 	r.Group(func(r chi.Router) {
 		r.Use(sessionManager.LoadAndSave)
-		r.Use(UserExists)
+		r.Use(UserInfo)
 
 		r.Get("/", Index)
 		r.Get("/login", Login)
