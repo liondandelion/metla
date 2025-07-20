@@ -77,9 +77,10 @@ func main() {
 		r.Use(UserInfo)
 
 		r.Get("/", Index)
-		r.Get("/login", Login)
 
+		r.Get("/login", Login)
 		r.Post("/login", LoginPost)
+		r.Post("/login/otp", LoginOTP)
 
 		r.Route("/register", func(r chi.Router) {
 			r.Get("/", Register)

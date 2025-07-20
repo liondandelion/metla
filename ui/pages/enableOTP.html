@@ -19,7 +19,8 @@ Enable OTP
     </div>
     <div class="form">
         <input type="submit" value="Send"
-            hx-post="/user/otp/enable" hx-target="#errorInvalid" hx-swap="outerHTML">
+            hx-post="/user/otp/enable" hx-target="#errorInvalid" hx-swap="outerHTML"
+            _="on click wait 100ms then set value of #otpCode to ''">
     </div>
 </form>
 

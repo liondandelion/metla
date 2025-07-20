@@ -1,0 +1,13 @@
+<form id="otp" class="form" _="on load remove #loginForm">
+    <div class="form">
+        <label for="otpCode">OTP Code: </label>
+        <input type="text" name="otpCode" id="otpCode" required autofocus _="on load put '' into me">
+    </div>
+    <div class="form">
+        <input type="submit" value="Send"
+            hx-post="/login/otp" hx-target="#errorInvalid" hx-swap="outerHTML"
+            _="on click wait 100ms then set value of #otpCode to ''">
+    </div>
+</form>
+
+<div id="errorInvalid"></div>

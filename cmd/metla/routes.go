@@ -124,10 +124,6 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 	password := []byte(r.PostFormValue("password"))
 	var passwordHash []byte
 
-	data := ErrorData{
-		ErrorID: "error-invalid",
-	}
-
 	var exists bool
 	err := dbPool.QueryRow(context.Background(), "select exists (select 1 from users where username = $1)", username).Scan(&exists)
 	if err != nil {
@@ -137,7 +133,10 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !exists {
-		data.Message = "Invalid username"
+		data := ErrorData{
+			ErrorID: "error-invalid",
+			Message: "Invalid username",
+		}
 		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
 		if err != nil {
 			log.Printf("LoginPost: failed to render: %v", err)
@@ -154,8 +153,39 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 
 	err = bcrypt.CompareHashAndPassword(passwordHash, password)
 	if err != nil {
-		data.Message = "Invalid password"
+		data := ErrorData{
+			ErrorID: "error-invalid",
+			Message: "Invalid password",
+		}
 		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
+		if err != nil {
+			log.Printf("LoginPost: failed to render: %v", err)
+		}
+		return
+	}
+
+	sessionManager.Put(r.Context(), "username", username)
+
+	if !sessionManager.Exists(r.Context(), "isOTPEnabled") {
+		err := dbPool.QueryRow(context.Background(), "select exists (select 1 from otp where username = $1)", username).Scan(&exists)
+		if err != nil {
+			log.Printf("LoginPost: failed to query or scan db: %v", err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if exists {
+			sessionManager.Put(r.Context(), "isOTPEnabled", true)
+		} else {
+			sessionManager.Put(r.Context(), "isOTPEnabled", false)
+		}
+	}
+
+	isOTPEnabled := sessionManager.GetBool(r.Context(), "isOTPEnabled")
+	if isOTPEnabled {
+		data := struct {
+		}{}
+		err := templateCache.htmxResponses["loginOTP.html"].Execute(w, data)
 		if err != nil {
 			log.Printf("LoginPost: failed to render: %v", err)
 		}
@@ -164,8 +194,35 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 
 	sessionManager.RenewToken(r.Context())
 	sessionManager.Put(r.Context(), "isAuthenticated", true)
-	sessionManager.Put(r.Context(), "username", username)
+	HTMXRedirect(w, "/")
+}
 
+func LoginOTP(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	otpCode := r.PostFormValue("otpCode")
+	username := sessionManager.GetString(r.Context(), "username")
+
+	valid, err := OTPValidate(username, otpCode)
+	if err != nil {
+		log.Printf("LoginOTP: failed to validate otp: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if !valid {
+		data := ErrorData{
+			ErrorID: "errorInvalid",
+			Message: "The code is invalid",
+		}
+		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
+		if err != nil {
+			log.Printf("LoginOTP: failed to render: %v", err)
+		}
+		return
+	}
+
+	sessionManager.RenewToken(r.Context())
+	sessionManager.Put(r.Context(), "isAuthenticated", true)
 	HTMXRedirect(w, "/")
 }
 
@@ -317,8 +374,8 @@ func OTPEnablePost(w http.ResponseWriter, r *http.Request) {
 	otpCode := r.PostFormValue("otpCode")
 	otpSecretEnc := sessionManager.GetBytes(r.Context(), "otpSecret")
 	username := sessionManager.GetString(r.Context(), "username")
-	nonce := sha256.Sum256([]byte(username))
 
+	nonce := sha256.Sum256([]byte(username))
 	otpSecretB, err := ghGCM.Open(nil, nonce[:12], otpSecretEnc, nil)
 	if err != nil {
 		log.Printf("OTPEnablePost: failed to open: %v", err)
@@ -365,4 +422,23 @@ func OTPDisable(w http.ResponseWriter, r *http.Request) {
 	sessionManager.RenewToken(r.Context())
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func OTPValidate(username, otpCode string) (bool, error) {
+	var otpSecretEnc []byte
+	err := dbPool.QueryRow(context.Background(), "select otp from otp where username = $1", username).Scan(&otpSecretEnc)
+	if err != nil {
+		log.Printf("OTPValidate: failed to get secret: %v", err)
+		return false, err
+	}
+
+	nonce := sha256.Sum256([]byte(username))
+	otpSecretB, err := ghGCM.Open(nil, nonce[:12], otpSecretEnc, nil)
+	if err != nil {
+		log.Printf("OTPIsCodeValid: failed to open: %v", err)
+		return false, err
+	}
+	otpSecret := string(otpSecretB)
+
+	return totp.Validate(otpCode, otpSecret), nil
 }
