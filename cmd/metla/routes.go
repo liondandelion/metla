@@ -315,7 +315,7 @@ func OTPEnable(w http.ResponseWriter, r *http.Request) {
 func OTPEnablePost(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	otpCode := r.PostFormValue("otpCode")
-	otpSecretEnc := sessionManager.PopBytes(r.Context(), "otpSecret")
+	otpSecretEnc := sessionManager.GetBytes(r.Context(), "otpSecret")
 	username := sessionManager.GetString(r.Context(), "username")
 	nonce := sha256.Sum256([]byte(username))
 
@@ -349,6 +349,7 @@ func OTPEnablePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sessionManager.RenewToken(r.Context())
+	sessionManager.Remove(r.Context(), "otpSecret")
 
 	HTMXRedirect(w, "/")
 }
