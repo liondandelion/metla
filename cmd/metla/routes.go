@@ -36,7 +36,7 @@ func FileServer(r chi.Router, path string, root http.FileSystem) {
 	})
 }
 
-func Index(w http.ResponseWriter, r *http.Request) {
+func Index(w http.ResponseWriter, r *http.Request) *MetlaError {
 	data := struct {
 		IsAuthenticated bool
 		IsOTPEnabled    bool
@@ -46,18 +46,20 @@ func Index(w http.ResponseWriter, r *http.Request) {
 
 	err := templateCache.pages["index.html"].ExecuteTemplate(w, "base", data)
 	if err != nil {
-		log.Printf("Index: failed to render: %v", err)
+		return &MetlaError{"Index", "failed to render", err, http.StatusInternalServerError}
 	}
+	return nil
 }
 
-func Register(w http.ResponseWriter, r *http.Request) {
+func Register(w http.ResponseWriter, r *http.Request) *MetlaError {
 	err := templateCache.pages["register.html"].ExecuteTemplate(w, "base", nil)
 	if err != nil {
-		log.Printf("Register: failed to render: %v", err)
+		return &MetlaError{"Register", "failed to render", err, http.StatusInternalServerError}
 	}
+	return nil
 }
 
-func RegisterPost(w http.ResponseWriter, r *http.Request) {
+func RegisterPost(w http.ResponseWriter, r *http.Request) *MetlaError {
 	r.ParseForm()
 	username := r.PostFormValue("username")
 	password := []byte(r.PostFormValue("password"))
@@ -65,25 +67,23 @@ func RegisterPost(w http.ResponseWriter, r *http.Request) {
 	hash, _ := HashPassword(password)
 	isAdmin := false
 
-	tag, err := dbPool.Exec(context.Background(), "insert into users (username, password_hash, is_admin) values ($1, $2, $3)", username, hash, isAdmin)
+	_, err := dbPool.Exec(context.Background(), "insert into users (username, password_hash, is_admin) values ($1, $2, $3)", username, hash, isAdmin)
 	if err != nil {
-		log.Printf("RegisterPost: failed to insert user: %v", err)
+		return &MetlaError{"RegisterPost", "failed to insert user", err, http.StatusInternalServerError}
 	}
-	_ = tag
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+	return nil
 }
 
-func RegisterExists(w http.ResponseWriter, r *http.Request) {
+func RegisterExists(w http.ResponseWriter, r *http.Request) *MetlaError {
 	r.ParseForm()
 	username := r.PostFormValue("username")
 
 	var exists bool
 	err := dbPool.QueryRow(context.Background(), "select exists (select 1 from users where username = $1)", username).Scan(&exists)
 	if err != nil {
-		log.Printf("RegisterExists: failed to query or scan db: %v", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return &MetlaError{"RegisterExists", "failed to query or scan db", err, http.StatusInternalServerError}
 	}
 
 	data := struct {
@@ -99,23 +99,26 @@ func RegisterExists(w http.ResponseWriter, r *http.Request) {
 
 	err = templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
 	if err != nil {
-		log.Printf("RegisterExists: failed to render: %v", err)
+		return &MetlaError{"RegisterExists", "failed to render", err, http.StatusInternalServerError}
 	}
+
+	return nil
 }
 
-func Login(w http.ResponseWriter, r *http.Request) {
+func Login(w http.ResponseWriter, r *http.Request) *MetlaError {
 	if sessionManager.GetBool(r.Context(), "isAuthenticated") {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
+		return nil
 	}
 
 	err := templateCache.pages["login.html"].ExecuteTemplate(w, "base", nil)
 	if err != nil {
-		log.Printf("Login: failed to render: %v", err)
+		return &MetlaError{"Login", "failed to render", err, http.StatusInternalServerError}
 	}
+	return nil
 }
 
-func LoginPost(w http.ResponseWriter, r *http.Request) {
+func LoginPost(w http.ResponseWriter, r *http.Request) *MetlaError {
 	r.ParseForm()
 	username := r.PostFormValue("username")
 	password := []byte(r.PostFormValue("password"))
@@ -124,9 +127,7 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 	var exists bool
 	err := dbPool.QueryRow(context.Background(), "select exists (select 1 from users where username = $1)", username).Scan(&exists)
 	if err != nil {
-		log.Printf("LoginPost: failed to query or scan db: %v", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return &MetlaError{"LoginPost", "failed to query or scan db", err, http.StatusInternalServerError}
 	}
 
 	data := struct {
@@ -139,16 +140,14 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 		data.Message = "Invalid username"
 		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
 		if err != nil {
-			log.Printf("LoginPost: failed to render: %v", err)
+			return &MetlaError{"LoginPost", "failed to render", err, http.StatusInternalServerError}
 		}
-		return
+		return nil
 	}
 
 	err = dbPool.QueryRow(context.Background(), "select password_hash from users where username = $1", username).Scan(&passwordHash)
 	if err != nil {
-		log.Printf("LoginPost: failed to query or scan db: %v", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return &MetlaError{"LoginPost", "failed to query or scan db", err, http.StatusInternalServerError}
 	}
 
 	err = bcrypt.CompareHashAndPassword(passwordHash, password)
@@ -156,9 +155,9 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 		data.Message = "Invalid password"
 		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
 		if err != nil {
-			log.Printf("LoginPost: failed to render: %v", err)
+			return &MetlaError{"LoginPost", "failed to render", err, http.StatusInternalServerError}
 		}
-		return
+		return nil
 	}
 
 	sessionManager.Put(r.Context(), "username", username)
@@ -166,9 +165,7 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 	if !sessionManager.Exists(r.Context(), "isOTPEnabled") {
 		err := dbPool.QueryRow(context.Background(), "select exists (select 1 from otp where username = $1)", username).Scan(&exists)
 		if err != nil {
-			log.Printf("LoginPost: failed to query or scan db: %v", err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
+			return &MetlaError{"LoginPost", "failed to query or scan db", err, http.StatusInternalServerError}
 		}
 
 		if exists {
@@ -184,26 +181,25 @@ func LoginPost(w http.ResponseWriter, r *http.Request) {
 		}{}
 		err := templateCache.htmxResponses["loginOTP.html"].Execute(w, data)
 		if err != nil {
-			log.Printf("LoginPost: failed to render: %v", err)
+			return &MetlaError{"LoginPost", "failed to render", err, http.StatusInternalServerError}
 		}
-		return
+		return nil
 	}
 
 	sessionManager.RenewToken(r.Context())
 	sessionManager.Put(r.Context(), "isAuthenticated", true)
 	HTMXRedirect(w, "/")
+	return nil
 }
 
-func LoginOTP(w http.ResponseWriter, r *http.Request) {
+func LoginOTP(w http.ResponseWriter, r *http.Request) *MetlaError {
 	r.ParseForm()
 	otpCode := r.PostFormValue("otpCode")
 	username := sessionManager.GetString(r.Context(), "username")
 
 	valid, err := OTPValidate(username, otpCode)
 	if err != nil {
-		log.Printf("LoginOTP: failed to validate otp: %v", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return &MetlaError{"LoginOTP", "failed to validate otp", err, http.StatusInternalServerError}
 	}
 
 	if !valid {
@@ -215,23 +211,25 @@ func LoginOTP(w http.ResponseWriter, r *http.Request) {
 		}
 		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
 		if err != nil {
-			log.Printf("LoginOTP: failed to render: %v", err)
+			return &MetlaError{"LoginOTP", "failed to render", err, http.StatusInternalServerError}
 		}
-		return
+		return nil
 	}
 
 	sessionManager.RenewToken(r.Context())
 	sessionManager.Put(r.Context(), "isAuthenticated", true)
 	HTMXRedirect(w, "/")
+	return nil
 }
 
-func Logout(w http.ResponseWriter, r *http.Request) {
+func Logout(w http.ResponseWriter, r *http.Request) *MetlaError {
 	sessionManager.RenewToken(r.Context())
 	sessionManager.Destroy(r.Context())
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+	return nil
 }
 
-func UsersTable(w http.ResponseWriter, r *http.Request) {
+func UsersTable(w http.ResponseWriter, r *http.Request) *MetlaError {
 	type User struct {
 		Username     string
 		PasswordHash []byte
@@ -241,18 +239,17 @@ func UsersTable(w http.ResponseWriter, r *http.Request) {
 	rows, _ := dbPool.Query(context.Background(), "select * from users;")
 	users, err := pgx.CollectRows(rows, pgx.RowToStructByName[User])
 	if err != nil {
-		log.Printf("UsersTable: failed to collect rows: %v", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return &MetlaError{"UsersTable", "failed to collect rows", err, http.StatusInternalServerError}
 	}
 
 	err = templateCache.pages["usersTable.html"].ExecuteTemplate(w, "base", users)
 	if err != nil {
-		log.Printf("UsersTable: failed to render: %v", err)
+		return &MetlaError{"UsersTable", "failed to render", err, http.StatusInternalServerError}
 	}
+	return nil
 }
 
-func User(w http.ResponseWriter, r *http.Request) {
+func User(w http.ResponseWriter, r *http.Request) *MetlaError {
 	data := struct {
 		IsAuthenticated bool
 		IsOTPEnabled    bool
@@ -263,36 +260,37 @@ func User(w http.ResponseWriter, r *http.Request) {
 
 	err := templateCache.pages["user.html"].ExecuteTemplate(w, "base", data)
 	if err != nil {
-		log.Printf("UsersTable: failed to render: %v", err)
+		return &MetlaError{"User", "failed to render", err, http.StatusInternalServerError}
 	}
+	return nil
 }
 
-func PasswordChange(w http.ResponseWriter, r *http.Request) {
+func PasswordChange(w http.ResponseWriter, r *http.Request) *MetlaError {
 	err := templateCache.pages["changePassword.html"].ExecuteTemplate(w, "base", nil)
 	if err != nil {
-		log.Printf("PasswordChange: failed to render: %v", err)
+		return &MetlaError{"PasswordChange", "failed to render", err, http.StatusInternalServerError}
 	}
+	return nil
 }
 
-func PasswordChangePost(w http.ResponseWriter, r *http.Request) {
+func PasswordChangePost(w http.ResponseWriter, r *http.Request) *MetlaError {
 	r.ParseForm()
 	username := sessionManager.GetString(r.Context(), "username")
 	newPassword := []byte(r.PostFormValue("newPassword"))
 
 	newHash, _ := HashPassword(newPassword)
 
-	tag, err := dbPool.Exec(context.Background(), "update users set password_hash = $1 where username = $2", newHash, username)
+	_, err := dbPool.Exec(context.Background(), "update users set password_hash = $1 where username = $2", newHash, username)
 	if err != nil {
-		log.Printf("PasswordChangePost: failed: %v", err)
+		return &MetlaError{"PasswordChangePost", "failed to update", err, http.StatusInternalServerError}
 	}
-	_ = tag
 
 	sessionManager.RenewToken(r.Context())
-
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+	return nil
 }
 
-func PasswordCheck(w http.ResponseWriter, r *http.Request) {
+func PasswordCheck(w http.ResponseWriter, r *http.Request) *MetlaError {
 	r.ParseForm()
 	username := sessionManager.GetString(r.Context(), "username")
 	oldPassword := []byte(r.PostFormValue("oldPassword"))
@@ -301,7 +299,7 @@ func PasswordCheck(w http.ResponseWriter, r *http.Request) {
 
 	err := dbPool.QueryRow(context.Background(), "select password_hash from users where username = $1", username).Scan(&oldHashFromTable)
 	if err != nil {
-		log.Printf("PasswordCheck: failed to get old hash: %v", err)
+		return &MetlaError{"PasswordCheck", "failed to get old hash", err, http.StatusInternalServerError}
 	}
 
 	data := struct {
@@ -318,11 +316,12 @@ func PasswordCheck(w http.ResponseWriter, r *http.Request) {
 
 	err = templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
 	if err != nil {
-		log.Printf("PasswordCheck: failed to render: %v", err)
+		return &MetlaError{"PasswordCheck", "failed to render", err, http.StatusInternalServerError}
 	}
+	return nil
 }
 
-func OTPEnable(w http.ResponseWriter, r *http.Request) {
+func OTPEnable(w http.ResponseWriter, r *http.Request) *MetlaError {
 	username := sessionManager.GetString(r.Context(), "username")
 
 	totpOpts := totp.GenerateOpts{
@@ -331,9 +330,7 @@ func OTPEnable(w http.ResponseWriter, r *http.Request) {
 	}
 	key, err := totp.Generate(totpOpts)
 	if err != nil {
-		log.Printf("OTPEnable: failed to generate key: %v", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return &MetlaError{"OTPEnable", "failed to generate key", err, http.StatusInternalServerError}
 	}
 
 	var buf bytes.Buffer
@@ -341,7 +338,6 @@ func OTPEnable(w http.ResponseWriter, r *http.Request) {
 	img, err := key.Image(200, 200)
 	if err != nil {
 		log.Printf("OTPEnable: failed to generate image: %v", err)
-
 	} else {
 		png.Encode(&buf, img)
 		imgBase64 = base64.StdEncoding.EncodeToString(buf.Bytes())
@@ -366,11 +362,12 @@ func OTPEnable(w http.ResponseWriter, r *http.Request) {
 
 	err = templateCache.pages["enableOTP.html"].ExecuteTemplate(w, "base", data)
 	if err != nil {
-		log.Printf("OTPEnable: failed to render: %v", err)
+		return &MetlaError{"OTPEnable", "failed to render", err, http.StatusInternalServerError}
 	}
+	return nil
 }
 
-func OTPEnablePost(w http.ResponseWriter, r *http.Request) {
+func OTPEnablePost(w http.ResponseWriter, r *http.Request) *MetlaError {
 	r.ParseForm()
 	otpCode := r.PostFormValue("otpCode")
 	otpSecretEnc := sessionManager.GetBytes(r.Context(), "otpSecret")
@@ -379,9 +376,7 @@ func OTPEnablePost(w http.ResponseWriter, r *http.Request) {
 	nonce := sha256.Sum256([]byte(username))
 	otpSecretB, err := ghGCM.Open(nil, nonce[:12], otpSecretEnc, nil)
 	if err != nil {
-		log.Printf("OTPEnablePost: failed to open: %v", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return &MetlaError{"OTPEnablePost", "failed to decrypt", err, http.StatusInternalServerError}
 	}
 	otpSecret := string(otpSecretB)
 
@@ -398,33 +393,33 @@ func OTPEnablePost(w http.ResponseWriter, r *http.Request) {
 		data.Message = "The code is invalid, try enrolling again in your app"
 		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
 		if err != nil {
-			log.Printf("OTPEnablePost: failed to render: %v", err)
+			return &MetlaError{"OTPEnablePost", "failed to render", err, http.StatusInternalServerError}
 		}
-		return
+		return nil
 	}
 
 	_, err = dbPool.Exec(context.Background(), "insert into otp (username, otp) values ($1, $2)", username, otpSecretEnc)
 	if err != nil {
-		log.Printf("OTPEnablePost: failed to insert otp: %v", err)
+		return &MetlaError{"OTPEnablePost", "failed to insert otp", err, http.StatusInternalServerError}
 	}
 
 	sessionManager.RenewToken(r.Context())
 	sessionManager.Remove(r.Context(), "otpSecret")
-
 	HTMXRedirect(w, "/")
+	return nil
 }
 
-func OTPDisable(w http.ResponseWriter, r *http.Request) {
+func OTPDisable(w http.ResponseWriter, r *http.Request) *MetlaError {
 	username := sessionManager.GetString(r.Context(), "username")
 
 	_, err := dbPool.Exec(context.Background(), "delete from otp where username = $1", username)
 	if err != nil {
-		log.Printf("OTPDisable: failed to delete row: %v", err)
+		return &MetlaError{"OTPDisable", "failed to delete row", err, http.StatusInternalServerError}
 	}
 
 	sessionManager.RenewToken(r.Context())
-
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+	return nil
 }
 
 // Helper functions

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/cipher"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -75,38 +76,37 @@ func main() {
 		r.Use(sessionManager.LoadAndSave)
 		r.Use(UserInfo)
 
-		r.Get("/", Index)
-
-		r.Get("/login", Login)
-		r.Post("/login", LoginPost)
-		r.Post("/login/otp", LoginOTP)
+		r.Method("GET", "/", MetlaHandler(Index))
+		r.Method("GET", "/login", MetlaHandler(Login))
+		r.Method("POST", "/login", MetlaHandler(LoginPost))
+		r.Method("POST", "/login/otp", MetlaHandler(LoginOTP))
 
 		r.Route("/register", func(r chi.Router) {
-			r.Get("/", Register)
-			r.Post("/", RegisterPost)
-			r.Post("/username", RegisterExists)
+			r.Method("GET", "/", MetlaHandler(Register))
+			r.Method("POST", "/", MetlaHandler(RegisterPost))
+			r.Method("POST", "/username", MetlaHandler(RegisterExists))
 		})
 
 		r.Group(func(r chi.Router) {
 			r.Use(Auth)
 
-			r.Get("/logout", Logout)
+			r.Method("GET", "/logout", MetlaHandler(Logout))
 
 			r.Route("/user", func(r chi.Router) {
-				r.Get("/", User)
-				r.Get("/password", PasswordChange)
-				r.Post("/password", PasswordChangePost)
-				r.Post("/password/check", PasswordCheck)
+				r.Method("GET", "/", MetlaHandler(User))
+				r.Method("GET", "/password", MetlaHandler(PasswordChange))
+				r.Method("POST", "/password", MetlaHandler(PasswordChangePost))
+				r.Method("POST", "/password/check", MetlaHandler(PasswordCheck))
 
-				r.Get("/otp/enable", OTPEnable)
-				r.Get("/otp/disable", OTPDisable)
-				r.Post("/otp/enable", OTPEnablePost)
+				r.Method("GET", "/otp/enable", MetlaHandler(OTPEnable))
+				r.Method("POST", "/otp/enable", MetlaHandler(OTPEnablePost))
+				r.Method("GET", "/otp/disable", MetlaHandler(OTPDisable))
 			})
 
 			r.Group(func(r chi.Router) {
 				r.Use(Admin)
 
-				r.Get("/userstable", UsersTable)
+				r.Method("GET", "/userstable", MetlaHandler(UsersTable))
 			})
 		})
 	})
@@ -163,4 +163,27 @@ func newTemplateCache() (TemplateCache, error) {
 	}
 
 	return cache, nil
+}
+
+type MetlaError struct {
+	Where  string
+	What   string
+	Err    error
+	Status int
+}
+
+func (e *MetlaError) Error() string {
+	return fmt.Sprintf("%s: %s: %v", e.Where, e.What, e.Err)
+}
+
+type MetlaHandler func(http.ResponseWriter, *http.Request) *MetlaError
+
+func (fn MetlaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if err := fn(w, r); err != nil {
+		log.Printf("Error: %v", err.Error())
+		switch err.Status {
+		default:
+			http.Error(w, http.StatusText(err.Status), err.Status)
+		}
+	}
 }
