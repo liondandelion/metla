@@ -7,6 +7,7 @@ root := justfile_directory()
 
 alias pgc := postgres-create
 alias pgs := postgres-start
+alias pgk := postgres-kill
 alias pgr := postgres-run
 
 postgres-create:
@@ -27,6 +28,9 @@ postgres-run:
 
 postgres-start:
     podman start postgres-metla
+
+postgres-kill:
+    podman stop postgres-metla
 
 postgres-shell:
     podman exec -it postgres-metla bash
