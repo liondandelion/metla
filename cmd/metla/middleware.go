@@ -2,70 +2,64 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 )
 
 func Auth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
 		if !sessionManager.GetBool(r.Context(), "isAuthenticated") {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
-			return
+			return nil
 		}
 
 		w.Header().Add("Cache-Control", "no-store")
 		next.ServeHTTP(w, r)
+		return nil
 	})
 }
 
 func Admin(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
 		username := sessionManager.GetString(r.Context(), "username")
 
 		var isAdmin bool
 		err := dbPool.QueryRow(context.Background(), "select is_admin from users where username = $1", username).Scan(&isAdmin)
 		if err != nil {
-			log.Printf("Admin: failed to query or scan db: %v", err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
+			return &MetlaError{"Admin", "failed to query or scan db", err, http.StatusInternalServerError}
 		}
 
 		if !isAdmin {
-			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-			return
+			return &MetlaError{"Admin", "Access denied", nil, http.StatusForbidden}
 		}
 
 		w.Header().Add("Cache-Control", "no-store")
 		next.ServeHTTP(w, r)
+		return nil
 	})
 }
 
 func UserInfo(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
 		username := sessionManager.GetString(r.Context(), "username")
 		if username == "" {
 			next.ServeHTTP(w, r)
-			return
+			return nil
 		}
 
 		var exists bool
 		err := dbPool.QueryRow(context.Background(), "select exists (select 1 from users where username = $1)", username).Scan(&exists)
 		if err != nil {
-			log.Printf("UserInfo: failed to query or scan db: %v", err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
+			return &MetlaError{"UserInfo", "failed to query or scan db", err, http.StatusInternalServerError}
 		}
 
 		if !exists {
 			Logout(w, r)
-			return
+			return nil
 		}
 
 		err = dbPool.QueryRow(context.Background(), "select exists (select 1 from otp where username = $1)", username).Scan(&exists)
 		if err != nil {
-			log.Printf("UserInfo: failed to query or scan db: %v", err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
+			return &MetlaError{"UserInfo", "failed to query or scan db", err, http.StatusInternalServerError}
 		}
 
 		if exists {
@@ -75,5 +69,6 @@ func UserInfo(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(w, r)
+		return nil
 	})
 }
