@@ -35,7 +35,14 @@ body {
     width: 100%;
 }
 
+.flex-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .header {
+    flex: 0 0 32px;
     position: sticky;
     z-index: 100;
     background-color: white;
@@ -43,11 +50,13 @@ body {
 }
 
 .navbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    width: 100%;
     margin: 0;
     padding: 0;
+
+    .left {
+        justify-content: flex-start;
+    }
 
     .right {
         justify-content: flex-end;
@@ -66,16 +75,18 @@ a {
 }
 
 @media screen and (max-width: 350px) {
+    .header, .navbar {
+        flex-direction: column;
+    }
+
     .header {
-        height: 40px;
+        flex: 0 0 40px;
         overflow: auto;
         margin: 8px;
     }
 
     .navbar {
-        flex-direction: column;
-
-        .right {
+        .left, .right {
             justify-content: space-between;
         }
 
