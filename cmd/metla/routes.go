@@ -427,6 +427,8 @@ func OTPDisable(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+// Helper functions
+
 func OTPValidate(username, otpCode string) (bool, error) {
 	var otpSecretEnc []byte
 	err := dbPool.QueryRow(context.Background(), "select otp from otp where username = $1", username).Scan(&otpSecretEnc)
@@ -444,4 +446,16 @@ func OTPValidate(username, otpCode string) (bool, error) {
 	otpSecret := string(otpSecretB)
 
 	return totp.Validate(otpCode, otpSecret), nil
+}
+
+func HashPassword(password []byte) ([]byte, error) {
+	/* encodedSaltSize = 22 bytes */
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
+	return bytes, err
+}
+
+func HTMXRedirect(w http.ResponseWriter, path string) {
+	h := w.Header()
+	h.Set("HX-Redirect", path)
+	w.WriteHeader(http.StatusOK)
 }

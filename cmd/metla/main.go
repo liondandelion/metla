@@ -17,7 +17,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type TemplateCache struct {
@@ -164,16 +163,4 @@ func newTemplateCache() (TemplateCache, error) {
 	}
 
 	return cache, nil
-}
-
-func HashPassword(password []byte) ([]byte, error) {
-	/* encodedSaltSize = 22 bytes */
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
-	return bytes, err
-}
-
-func HTMXRedirect(w http.ResponseWriter, path string) {
-	h := w.Header()
-	h.Set("HX-Redirect", path)
-	w.WriteHeader(http.StatusOK)
 }
