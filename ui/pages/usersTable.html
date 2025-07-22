@@ -12,12 +12,12 @@ Users Table
         </tr>
     </thead>
     <tbody>
-        {{range .}}
-        <tr>
-            <td>{{.Username}}</td>
-            <td>{{.PasswordHash}}</td>
-            <td>{{.IsAdmin}}</td>
-        </tr>
+        {{range .Users}}
+            <tr>
+                <td>{{.Username}}</td>
+                <td>{{.PasswordHash}}</td>
+                <td>{{.IsAdmin}}</td>
+            </tr>
         {{end}}
     </tbody>
 </table>

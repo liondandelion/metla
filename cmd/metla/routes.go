@@ -38,7 +38,6 @@ func FileServer(r chi.Router, path string, root http.FileSystem) {
 
 func Index(w http.ResponseWriter, r *http.Request) *MetlaError {
 	data := sessionManager.Get(r.Context(), "UserData").(UserData)
-
 	err := templateCache.pages["index.html"].ExecuteTemplate(w, "base", data)
 	if err != nil {
 		return &MetlaError{"Index", "failed to render", err, http.StatusInternalServerError}
@@ -47,7 +46,8 @@ func Index(w http.ResponseWriter, r *http.Request) *MetlaError {
 }
 
 func Register(w http.ResponseWriter, r *http.Request) *MetlaError {
-	err := templateCache.pages["register.html"].ExecuteTemplate(w, "base", nil)
+	data := sessionManager.Get(r.Context(), "UserData").(UserData)
+	err := templateCache.pages["register.html"].ExecuteTemplate(w, "base", data)
 	if err != nil {
 		return &MetlaError{"Register", "failed to render", err, http.StatusInternalServerError}
 	}
@@ -107,7 +107,7 @@ func Login(w http.ResponseWriter, r *http.Request) *MetlaError {
 		return nil
 	}
 
-	err := templateCache.pages["login.html"].ExecuteTemplate(w, "base", nil)
+	err := templateCache.pages["login.html"].ExecuteTemplate(w, "base", data)
 	if err != nil {
 		return &MetlaError{"Login", "failed to render", err, http.StatusInternalServerError}
 	}
@@ -220,6 +220,8 @@ func Logout(w http.ResponseWriter, r *http.Request) *MetlaError {
 }
 
 func UsersTable(w http.ResponseWriter, r *http.Request) *MetlaError {
+	data := sessionManager.Get(r.Context(), "UserData").(UserData)
+
 	type User struct {
 		Username     string
 		PasswordHash []byte
@@ -232,7 +234,15 @@ func UsersTable(w http.ResponseWriter, r *http.Request) *MetlaError {
 		return &MetlaError{"UsersTable", "failed to collect rows", err, http.StatusInternalServerError}
 	}
 
-	err = templateCache.pages["usersTable.html"].ExecuteTemplate(w, "base", users)
+	usersData := struct {
+		UserData
+		Users []User
+	}{
+		UserData: data,
+		Users:    users,
+	}
+
+	err = templateCache.pages["usersTable.html"].ExecuteTemplate(w, "base", usersData)
 	if err != nil {
 		return &MetlaError{"UsersTable", "failed to render", err, http.StatusInternalServerError}
 	}
@@ -249,7 +259,8 @@ func User(w http.ResponseWriter, r *http.Request) *MetlaError {
 }
 
 func PasswordChange(w http.ResponseWriter, r *http.Request) *MetlaError {
-	err := templateCache.pages["changePassword.html"].ExecuteTemplate(w, "base", nil)
+	data := sessionManager.Get(r.Context(), "UserData").(UserData)
+	err := templateCache.pages["changePassword.html"].ExecuteTemplate(w, "base", data)
 	if err != nil {
 		return &MetlaError{"PasswordChange", "failed to render", err, http.StatusInternalServerError}
 	}

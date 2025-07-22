@@ -14,7 +14,39 @@
     </head>
 
     <body>
-        {{template "main" .}}
+        <header class="flex-container header">
+            <nav class="flex-container navbar">
+                <ul class="flex-container navbar left">
+                    <li>
+                        <a href="/" class="left">Metla</a>
+                    </li>
+                </ul>
+                <ul class="flex-container navbar right">
+                    {{if .IsAuthenticated}}
+                    <li>
+                        <a href="/user">Profile</a>
+                    </li>
+                    <li>
+                        <a href="/logout">Logout</a>
+                    </li>
+                    <li>
+                        <a href="/userstable">Users</a>
+                    </li>
+                    {{else}}
+                    <li>
+                        <a href="/register">Register</a>
+                    </li>
+                    <li>
+                        <a href="/login">Login</a>
+                    </li>
+                    {{end}}
+                </ul>
+            </nav>
+        </header>
+
+        <main class="fullsize">
+            {{template "main" .}}
+        </main>
     </body>
 </html>
 {{end}}
