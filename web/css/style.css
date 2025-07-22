@@ -46,7 +46,9 @@ body {
     position: sticky;
     z-index: 100;
     background-color: white;
-    margin: 16px;
+    margin: 0;
+    padding: 16px;
+    border-style: none none solid none;
 }
 
 .navbar {
@@ -82,7 +84,7 @@ a {
     .header {
         flex: 0 0 40px;
         overflow: auto;
-        margin: 8px;
+        padding: 8px;
     }
 
     .navbar {
