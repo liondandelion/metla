@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/cipher"
+	"encoding/gob"
 	"fmt"
 	"html/template"
 	"log"
@@ -36,6 +37,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Main: unable to load .env: %v\n", err)
 	}
+
+	gob.Register(UserData{})
 
 	templateCache, err = newTemplateCache()
 	if err != nil {
@@ -74,7 +77,8 @@ func main() {
 
 	r.Group(func(r chi.Router) {
 		r.Use(sessionManager.LoadAndSave)
-		r.Use(UserInfo)
+		r.Use(EnsureUserDataExists)
+		r.Use(EnsureUserExists)
 
 		r.Method("GET", "/", MetlaHandler(Index))
 		r.Method("GET", "/login", MetlaHandler(Login))
@@ -186,4 +190,9 @@ func (fn MetlaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, http.StatusText(err.Status), err.Status)
 		}
 	}
+}
+
+type UserData struct {
+	Username                               string
+	IsAuthenticated, IsAdmin, IsOTPEnabled bool
 }

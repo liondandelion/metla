@@ -37,12 +37,7 @@ func FileServer(r chi.Router, path string, root http.FileSystem) {
 }
 
 func Index(w http.ResponseWriter, r *http.Request) *MetlaError {
-	data := struct {
-		IsAuthenticated bool
-		IsOTPEnabled    bool
-	}{
-		IsAuthenticated: sessionManager.GetBool(r.Context(), "isAuthenticated"),
-	}
+	data := sessionManager.Get(r.Context(), "UserData").(UserData)
 
 	err := templateCache.pages["index.html"].ExecuteTemplate(w, "base", data)
 	if err != nil {
@@ -106,7 +101,8 @@ func RegisterExists(w http.ResponseWriter, r *http.Request) *MetlaError {
 }
 
 func Login(w http.ResponseWriter, r *http.Request) *MetlaError {
-	if sessionManager.GetBool(r.Context(), "isAuthenticated") {
+	data := sessionManager.Get(r.Context(), "UserData").(UserData)
+	if data.IsAuthenticated {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return nil
 	}
@@ -123,6 +119,7 @@ func LoginPost(w http.ResponseWriter, r *http.Request) *MetlaError {
 	username := r.PostFormValue("username")
 	password := []byte(r.PostFormValue("password"))
 	var passwordHash []byte
+	data := sessionManager.Get(r.Context(), "UserData").(UserData)
 
 	var exists bool
 	err := dbPool.QueryRow(context.Background(), "select exists (select 1 from users where username = $1)", username).Scan(&exists)
@@ -130,15 +127,15 @@ func LoginPost(w http.ResponseWriter, r *http.Request) *MetlaError {
 		return &MetlaError{"LoginPost", "failed to query or scan db", err, http.StatusInternalServerError}
 	}
 
-	data := struct {
+	errorData := struct {
 		ErrorID, Message string
 	}{
 		ErrorID: "errorInvalid",
 	}
 
 	if !exists {
-		data.Message = "Invalid username"
-		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
+		errorData.Message = "Invalid username"
+		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, errorData)
 		if err != nil {
 			return &MetlaError{"LoginPost", "failed to render", err, http.StatusInternalServerError}
 		}
@@ -152,34 +149,25 @@ func LoginPost(w http.ResponseWriter, r *http.Request) *MetlaError {
 
 	err = bcrypt.CompareHashAndPassword(passwordHash, password)
 	if err != nil {
-		data.Message = "Invalid password"
-		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
+		errorData.Message = "Invalid password"
+		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, errorData)
 		if err != nil {
 			return &MetlaError{"LoginPost", "failed to render", err, http.StatusInternalServerError}
 		}
 		return nil
 	}
 
-	sessionManager.Put(r.Context(), "username", username)
+	data.Username = username
 
-	if !sessionManager.Exists(r.Context(), "isOTPEnabled") {
-		err := dbPool.QueryRow(context.Background(), "select exists (select 1 from otp where username = $1)", username).Scan(&exists)
-		if err != nil {
-			return &MetlaError{"LoginPost", "failed to query or scan db", err, http.StatusInternalServerError}
-		}
-
-		if exists {
-			sessionManager.Put(r.Context(), "isOTPEnabled", true)
-		} else {
-			sessionManager.Put(r.Context(), "isOTPEnabled", false)
-		}
+	err = dbPool.QueryRow(context.Background(), "select exists (select 1 from otp where username = $1)", username).Scan(&data.IsOTPEnabled)
+	if err != nil {
+		return &MetlaError{"LoginPost", "failed to query or scan db", err, http.StatusInternalServerError}
 	}
 
-	isOTPEnabled := sessionManager.GetBool(r.Context(), "isOTPEnabled")
-	if isOTPEnabled {
-		data := struct {
-		}{}
-		err := templateCache.htmxResponses["loginOTP.html"].Execute(w, data)
+	sessionManager.Put(r.Context(), "UserData", data)
+
+	if data.IsOTPEnabled {
+		err := templateCache.htmxResponses["loginOTP.html"].Execute(w, nil)
 		if err != nil {
 			return &MetlaError{"LoginPost", "failed to render", err, http.StatusInternalServerError}
 		}
@@ -187,7 +175,8 @@ func LoginPost(w http.ResponseWriter, r *http.Request) *MetlaError {
 	}
 
 	sessionManager.RenewToken(r.Context())
-	sessionManager.Put(r.Context(), "isAuthenticated", true)
+	data.IsAuthenticated = true
+	sessionManager.Put(r.Context(), "UserData", data)
 	HTMXRedirect(w, "/")
 	return nil
 }
@@ -195,9 +184,9 @@ func LoginPost(w http.ResponseWriter, r *http.Request) *MetlaError {
 func LoginOTP(w http.ResponseWriter, r *http.Request) *MetlaError {
 	r.ParseForm()
 	otpCode := r.PostFormValue("otpCode")
-	username := sessionManager.GetString(r.Context(), "username")
+	data := sessionManager.Get(r.Context(), "UserData").(UserData)
 
-	valid, err := OTPValidate(username, otpCode)
+	valid, err := OTPValidate(data.Username, otpCode)
 	if err != nil {
 		return &MetlaError{"LoginOTP", "failed to validate otp", err, http.StatusInternalServerError}
 	}
@@ -217,7 +206,8 @@ func LoginOTP(w http.ResponseWriter, r *http.Request) *MetlaError {
 	}
 
 	sessionManager.RenewToken(r.Context())
-	sessionManager.Put(r.Context(), "isAuthenticated", true)
+	data.IsAuthenticated = true
+	sessionManager.Put(r.Context(), "UserData", data)
 	HTMXRedirect(w, "/")
 	return nil
 }
@@ -250,14 +240,7 @@ func UsersTable(w http.ResponseWriter, r *http.Request) *MetlaError {
 }
 
 func User(w http.ResponseWriter, r *http.Request) *MetlaError {
-	data := struct {
-		IsAuthenticated bool
-		IsOTPEnabled    bool
-	}{
-		IsAuthenticated: sessionManager.GetBool(r.Context(), "isAuthenticated"),
-		IsOTPEnabled:    sessionManager.GetBool(r.Context(), "isOTPEnabled"),
-	}
-
+	data := sessionManager.Get(r.Context(), "UserData").(UserData)
 	err := templateCache.pages["user.html"].ExecuteTemplate(w, "base", data)
 	if err != nil {
 		return &MetlaError{"User", "failed to render", err, http.StatusInternalServerError}
@@ -275,12 +258,12 @@ func PasswordChange(w http.ResponseWriter, r *http.Request) *MetlaError {
 
 func PasswordChangePost(w http.ResponseWriter, r *http.Request) *MetlaError {
 	r.ParseForm()
-	username := sessionManager.GetString(r.Context(), "username")
 	newPassword := []byte(r.PostFormValue("newPassword"))
+	data := sessionManager.Get(r.Context(), "UserData").(UserData)
 
 	newHash, _ := HashPassword(newPassword)
 
-	_, err := dbPool.Exec(context.Background(), "update users set password_hash = $1 where username = $2", newHash, username)
+	_, err := dbPool.Exec(context.Background(), "update users set password_hash = $1 where username = $2", newHash, data.Username)
 	if err != nil {
 		return &MetlaError{"PasswordChangePost", "failed to update", err, http.StatusInternalServerError}
 	}
@@ -292,17 +275,17 @@ func PasswordChangePost(w http.ResponseWriter, r *http.Request) *MetlaError {
 
 func PasswordCheck(w http.ResponseWriter, r *http.Request) *MetlaError {
 	r.ParseForm()
-	username := sessionManager.GetString(r.Context(), "username")
 	oldPassword := []byte(r.PostFormValue("oldPassword"))
+	data := sessionManager.Get(r.Context(), "UserData").(UserData)
 
 	var oldHashFromTable []byte
 
-	err := dbPool.QueryRow(context.Background(), "select password_hash from users where username = $1", username).Scan(&oldHashFromTable)
+	err := dbPool.QueryRow(context.Background(), "select password_hash from users where username = $1", data.Username).Scan(&oldHashFromTable)
 	if err != nil {
 		return &MetlaError{"PasswordCheck", "failed to get old hash", err, http.StatusInternalServerError}
 	}
 
-	data := struct {
+	errorData := struct {
 		ErrorID, Message string
 	}{
 		ErrorID: "errorWrong",
@@ -311,10 +294,10 @@ func PasswordCheck(w http.ResponseWriter, r *http.Request) *MetlaError {
 
 	err = bcrypt.CompareHashAndPassword(oldHashFromTable, oldPassword)
 	if err != nil {
-		data.Message = "Old password is wrong"
+		errorData.Message = "Old password is wrong"
 	}
 
-	err = templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
+	err = templateCache.htmxResponses["errorDiv.html"].Execute(w, errorData)
 	if err != nil {
 		return &MetlaError{"PasswordCheck", "failed to render", err, http.StatusInternalServerError}
 	}
@@ -322,11 +305,11 @@ func PasswordCheck(w http.ResponseWriter, r *http.Request) *MetlaError {
 }
 
 func OTPEnable(w http.ResponseWriter, r *http.Request) *MetlaError {
-	username := sessionManager.GetString(r.Context(), "username")
+	data := sessionManager.Get(r.Context(), "UserData").(UserData)
 
 	totpOpts := totp.GenerateOpts{
 		Issuer:      "metla.com",
-		AccountName: username,
+		AccountName: data.Username,
 	}
 	key, err := totp.Generate(totpOpts)
 	if err != nil {
@@ -343,12 +326,14 @@ func OTPEnable(w http.ResponseWriter, r *http.Request) *MetlaError {
 		imgBase64 = base64.StdEncoding.EncodeToString(buf.Bytes())
 	}
 
-	data := struct {
+	otpData := struct {
+		UserData
 		Service  string
 		Username string
 		Secret   string
 		Image    string
 	}{
+		UserData: data,
 		Service:  key.Issuer(),
 		Username: key.AccountName(),
 		Secret:   key.Secret(),
@@ -356,11 +341,11 @@ func OTPEnable(w http.ResponseWriter, r *http.Request) *MetlaError {
 	}
 
 	// TODO: is it more likely to repeat than random?
-	nonce := sha256.Sum256([]byte(username))
-	secretEnc := ghGCM.Seal(nil, nonce[:12], []byte(data.Secret), nil)
+	nonce := sha256.Sum256([]byte(data.Username))
+	secretEnc := ghGCM.Seal(nil, nonce[:12], []byte(otpData.Secret), nil)
 	sessionManager.Put(r.Context(), "otpSecret", secretEnc)
 
-	err = templateCache.pages["enableOTP.html"].ExecuteTemplate(w, "base", data)
+	err = templateCache.pages["enableOTP.html"].ExecuteTemplate(w, "base", otpData)
 	if err != nil {
 		return &MetlaError{"OTPEnable", "failed to render", err, http.StatusInternalServerError}
 	}
@@ -371,9 +356,9 @@ func OTPEnablePost(w http.ResponseWriter, r *http.Request) *MetlaError {
 	r.ParseForm()
 	otpCode := r.PostFormValue("otpCode")
 	otpSecretEnc := sessionManager.GetBytes(r.Context(), "otpSecret")
-	username := sessionManager.GetString(r.Context(), "username")
+	data := sessionManager.Get(r.Context(), "UserData").(UserData)
 
-	nonce := sha256.Sum256([]byte(username))
+	nonce := sha256.Sum256([]byte(data.Username))
 	otpSecretB, err := ghGCM.Open(nil, nonce[:12], otpSecretEnc, nil)
 	if err != nil {
 		return &MetlaError{"OTPEnablePost", "failed to decrypt", err, http.StatusInternalServerError}
@@ -382,7 +367,7 @@ func OTPEnablePost(w http.ResponseWriter, r *http.Request) *MetlaError {
 
 	valid := totp.Validate(otpCode, otpSecret)
 
-	data := struct {
+	errorData := struct {
 		ErrorID, Message string
 	}{
 		ErrorID: "errorInvalid",
@@ -390,34 +375,40 @@ func OTPEnablePost(w http.ResponseWriter, r *http.Request) *MetlaError {
 	}
 
 	if !valid {
-		data.Message = "The code is invalid, try enrolling again in your app"
-		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, data)
+		errorData.Message = "The code is invalid, try enrolling again in your app"
+		err := templateCache.htmxResponses["errorDiv.html"].Execute(w, errorData)
 		if err != nil {
 			return &MetlaError{"OTPEnablePost", "failed to render", err, http.StatusInternalServerError}
 		}
 		return nil
 	}
 
-	_, err = dbPool.Exec(context.Background(), "insert into otp (username, otp) values ($1, $2)", username, otpSecretEnc)
+	_, err = dbPool.Exec(context.Background(), "insert into otp (username, otp) values ($1, $2)", data.Username, otpSecretEnc)
 	if err != nil {
 		return &MetlaError{"OTPEnablePost", "failed to insert otp", err, http.StatusInternalServerError}
 	}
 
+	data.IsOTPEnabled = true
+
 	sessionManager.RenewToken(r.Context())
 	sessionManager.Remove(r.Context(), "otpSecret")
+	sessionManager.Put(r.Context(), "UserData", data)
 	HTMXRedirect(w, "/")
 	return nil
 }
 
 func OTPDisable(w http.ResponseWriter, r *http.Request) *MetlaError {
-	username := sessionManager.GetString(r.Context(), "username")
+	data := sessionManager.Get(r.Context(), "UserData").(UserData)
 
-	_, err := dbPool.Exec(context.Background(), "delete from otp where username = $1", username)
+	_, err := dbPool.Exec(context.Background(), "delete from otp where username = $1", data.Username)
 	if err != nil {
 		return &MetlaError{"OTPDisable", "failed to delete row", err, http.StatusInternalServerError}
 	}
 
+	data.IsOTPEnabled = false
+
 	sessionManager.RenewToken(r.Context())
+	sessionManager.Put(r.Context(), "UserData", data)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 	return nil
 }
