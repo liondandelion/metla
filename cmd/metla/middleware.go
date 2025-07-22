@@ -24,12 +24,6 @@ func Admin(next http.Handler) http.Handler {
 	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
 		data := sessionManager.Get(r.Context(), "UserData").(UserData)
 
-		err := dbPool.QueryRow(context.Background(), "select is_admin from users where username = $1", data.Username).Scan(&data.IsAdmin)
-		if err != nil {
-			return &MetlaError{"Admin", "failed to query or scan db", err, http.StatusInternalServerError}
-		}
-		sessionManager.Put(r.Context(), "UserData", data)
-
 		if !data.IsAdmin {
 			return &MetlaError{"Admin", "Access denied", nil, http.StatusForbidden}
 		}
@@ -59,6 +53,12 @@ func EnsureUserExists(next http.Handler) http.Handler {
 			Logout(w, r)
 			return nil
 		}
+
+		err = dbPool.QueryRow(context.Background(), "select is_admin from users where username = $1", data.Username).Scan(&data.IsAdmin)
+		if err != nil {
+			return &MetlaError{"Admin", "failed to query or scan db", err, http.StatusInternalServerError}
+		}
+		sessionManager.Put(r.Context(), "UserData", data)
 
 		next.ServeHTTP(w, r)
 		return nil
