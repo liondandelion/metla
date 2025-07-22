@@ -318,7 +318,8 @@ func OTPEnable(w http.ResponseWriter, r *http.Request) *MetlaError {
 
 	var buf bytes.Buffer
 	var imgBase64 string
-	img, err := key.Image(200, 200)
+	imageWidth, imageHeight := 200, 200
+	img, err := key.Image(imageWidth, imageHeight)
 	if err != nil {
 		log.Printf("OTPEnable: failed to generate image: %v", err)
 	} else {
@@ -328,16 +329,20 @@ func OTPEnable(w http.ResponseWriter, r *http.Request) *MetlaError {
 
 	otpData := struct {
 		UserData
-		Service  string
-		Username string
-		Secret   string
-		Image    string
+		Service     string
+		Username    string
+		Secret      string
+		Image       string
+		ImageWidth  int
+		ImageHeight int
 	}{
-		UserData: data,
-		Service:  key.Issuer(),
-		Username: key.AccountName(),
-		Secret:   key.Secret(),
-		Image:    imgBase64,
+		UserData:    data,
+		Service:     key.Issuer(),
+		Username:    key.AccountName(),
+		Secret:      key.Secret(),
+		Image:       imgBase64,
+		ImageWidth:  imageWidth,
+		ImageHeight: imageHeight,
 	}
 
 	// TODO: is it more likely to repeat than random?
