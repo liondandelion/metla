@@ -1,3 +1,45 @@
+# Возможности
+
+Изначально планировал: пользователь может создавать события (точки на карте) и связывать их друг с
+другом, получая маршрут. Каждое событие помимо описание имеет время проведения.
+
+Что хочу сейчас: сделать возможность полноценно рисовать на карте, как можно делать в geojson. Пусть
+пользователь создает свои собственные точки интереса, маршруты, геометрии и так далее и сохраняет их себе в
+профиль. Этими вещами затем можно делиться (карта открыта для незарегистрированных пользователей, по
+ссылке пусть отображает слой), их можно видеть, если пользователь в друзьях и т.д.
+
+Такие слои хранить в PostGIS для каждого пользователя. А события пусть привязывают такие слои, чтобы
+можно было создать слой для маршрута прогулки/поездки, а затем прикрепить его к событию в
+определенное время.
+
+# Полезное
+
+1. https://maplibre.org
+1. https://protomaps.com
+1. Web server https://caddyserver.com
+1. https://geojson.io
+1. http://bboxfinder.com
+1. https://spelunker.whosonfirst.org
+1. https://datatracker.ietf.org/doc/html/rfc7946
+1. https://overturemaps.org
+1. Download openstreetmap data https://slice.openstreetmap.us
+1. https://www.openstreetmap.org
+1. https://openmaptiles.org
+
+1. https://github.com/maplibre/awesome-maplibre
+1. Geojson, PostGIS in go https://github.com/paulmach/orb/tree/master
+1. Build pmtiles from osm data https://github.com/systemed/tilemaker or https://github.com/onthegomap/planetiler
+1. Create and edit maplibre styles https://github.com/maplibre/maputnik
+
+PMTiles can be viewed here https://maps.protomaps.com
+
+SPB bbox: 29.410000,59.615000,30.780000,60.265000
+
+## Примеры
+
+1. https://til.simonwillison.net/gis/pmtiles
+1. https://til.simonwillison.net/overture-maps/overture-maps-parquet#user-content-filtering-for-places-in-half-moon-bay
+
 # Требования
 
 ## Состав приложения
@@ -49,22 +91,3 @@
 *Это примерные рамки, всегда могут быть исключения как в большую, так и в
 меньшую сторону. Будут учитываться так же: сложность проекта, грамотное
 разделение ролей и задач, история ведения Git, баг-трекера и тд.
-
-# Полезное
-
-1. https://maplibre.org
-1. https://protomaps.com
-1. https://caddyserver.com
-1. https://geojson.io
-1. http://bboxfinder.com
-1. https://spelunker.whosonfirst.org
-1. https://datatracker.ietf.org/doc/html/rfc7946
-1. https://overturemaps.org
-1. https://slice.openstreetmap.us
-
-SPB bbox: 29.410000,59.615000,30.780000,60.265000
-
-## Примеры
-
-1. https://til.simonwillison.net/gis/pmtiles
-1. https://til.simonwillison.net/overture-maps/overture-maps-parquet#user-content-filtering-for-places-in-half-moon-bay
