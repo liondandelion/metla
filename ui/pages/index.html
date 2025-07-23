@@ -4,16 +4,37 @@ Metla
 
 {{define "main"}}
 <script src="/assets/js/third_party/maplibre-gl.js"></script>
+<script src="/assets/js/third_party/pmtiles.js"></script>
+<script src="/assets/js/third_party/basemaps.js"></script>
 <link rel="stylesheet" type="text/css" href="/assets/css/third_party/maplibre-gl.css">
 
 <div id="map" class="fullsize"></div>
 
 <script>
+    let protocol = new pmtiles.Protocol({metadata: true});
+    maplibregl.addProtocol("pmtiles", protocol.tile);
+
     var map = new maplibregl.Map({
         container: 'map', // container id
-        style: 'https://demotiles.maplibre.org/style.json', // style URL
-        center: [0, 0], // starting position [lng, lat]
-        zoom: 1 // starting zoom
+        //style: 'https://demotiles.maplibre.org/style.json', // style URL
+        center: [30.113525, 59.903402], // starting position [lng, lat]
+        zoom: 9, // starting zoom
+        maxBounds: [29.410000, 59.615000, 30.780000, 60.265000],
+        style: {
+            version: 8,
+            glyphs: "http://localhost:3001/assets/map/basemaps-assets/fonts/{fontstack}/{range}.pbf",
+            sprite: "http://localhost:3001/assets/map/basemaps-assets/sprites/v4/light",
+            sources: {
+                metla_source: {
+                    type: "vector",
+                    // For standard Z/X/Y tile APIs or Z/X/Y URLs served from go-pmtiles, replace "url" with "tiles" and remove all the pmtiles-related client code.
+                    // tiles: ["https://example.com/{z}/[x}/{y}.mvt"],
+                    // see https://maplibre.org/maplibre-style-spec/sources/#vector
+                    url: "pmtiles://assets/map/spb.pmtiles",
+                },
+            },
+            layers: basemaps.layers("metla_source", basemaps.namedFlavor("light"), {lang: "ru"}),
+        },
     });
 </script>
 {{end}}
