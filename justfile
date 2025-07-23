@@ -50,6 +50,7 @@ db-remove:
 install-tools:
     go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
     go install honnef.co/go/tools/cmd/staticcheck@latest
+    go install github.com/protomaps/go-pmtiles@latest
 
 build:
     gofmt -w ./cmd/metla/*.go
@@ -58,3 +59,6 @@ build:
 vet:
     go vet ./...
     staticcheck ./...
+
+fetch-pmtiles:
+    go-pmtiles extract https://build.protomaps.com/20250722.pmtiles ./web/map/spb.pmtiles --bbox=29.410000,59.615000,30.780000,60.265000
