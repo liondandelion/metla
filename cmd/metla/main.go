@@ -51,6 +51,11 @@ func main() {
 	}
 	defer dbPool.Close()
 
+	err = dbPool.Ping(context.Background())
+	if err != nil {
+		log.Fatalf("Main: failed to ping db: %v\n", err)
+	}
+
 	sessionManager = scs.New()
 	sessionManager.Store = pgxstore.New(dbPool)
 	sessionManager.Lifetime = 12 * time.Hour
