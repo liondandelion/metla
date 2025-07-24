@@ -36,5 +36,10 @@ Metla
             layers: basemaps.layers("metla_source", basemaps.namedFlavor("light"), {lang: "ru"}),
         },
     });
+
+    map.addControl(new maplibregl.NavigationControl({
+        showZoom: true,
+        showCompass: false,
+    }));
 </script>
 {{end}}
