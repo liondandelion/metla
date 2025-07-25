@@ -319,7 +319,7 @@ func OTPEnable(w http.ResponseWriter, r *http.Request) *MetlaError {
 	data := sessionManager.Get(r.Context(), "UserData").(UserData)
 
 	totpOpts := totp.GenerateOpts{
-		Issuer:      "metla.com",
+		Issuer:      "Metla",
 		AccountName: data.Username,
 	}
 	key, err := totp.Generate(totpOpts)
