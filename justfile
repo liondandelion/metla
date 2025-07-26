@@ -16,7 +16,7 @@ postgres-create:
         -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
         -v pgdata_metla:/var/lib/postgresql/data \
         -p 5432:5432 \
-        postgres
+        postgres:17
 
 postgres-run:
     podman run -d \
@@ -24,7 +24,7 @@ postgres-run:
         -e POSTGRES_PASSWORD=${POSTGRES_PASSWORD} \
         -v pgdata_metla:/var/lib/postgresql/data \
         -p 5432:5432 \
-        postgres
+        postgres:17
 
 postgres-start:
     podman start postgres-metla
