@@ -30,6 +30,7 @@
 1. Geojson, PostGIS in go https://github.com/paulmach/orb/tree/master
 1. Build pmtiles from osm data https://github.com/systemed/tilemaker or https://github.com/onthegomap/planetiler
 1. Create and edit maplibre styles https://github.com/maplibre/maputnik
+1. View OSM map data https://github.com/openstreetmap/osmosis
 
 PMTiles can be viewed here https://maps.protomaps.com
 
