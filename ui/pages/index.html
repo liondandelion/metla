@@ -5,10 +5,11 @@ Metla
 {{define "main"}}
 <script src="/assets/js/third_party/maplibre-gl.js"></script>
 <script src="/assets/js/third_party/pmtiles.js"></script>
-<script src="/assets/js/third_party/basemaps.js"></script>
 <link rel="stylesheet" type="text/css" href="/assets/css/third_party/maplibre-gl.css">
 
 <div id="map" class="fullsize"></div>
+<pre id="features"></pre>
+<div id="zoom"></div>
 
 <script>
     let protocol = new pmtiles.Protocol({metadata: true});
@@ -20,26 +21,51 @@ Metla
         center: [30.113525, 59.903402], // starting position [lng, lat]
         zoom: 9, // starting zoom
         maxBounds: [29.410000, 59.615000, 30.780000, 60.265000],
-        style: {
-            version: 8,
-            glyphs: "http://localhost:3001/assets/map/basemaps-assets/fonts/{fontstack}/{range}.pbf",
-            sprite: "http://localhost:3001/assets/map/basemaps-assets/sprites/v4/light",
-            sources: {
-                metla_source: {
-                    type: "vector",
-                    // For standard Z/X/Y tile APIs or Z/X/Y URLs served from go-pmtiles, replace "url" with "tiles" and remove all the pmtiles-related client code.
-                    // tiles: ["https://example.com/{z}/[x}/{y}.mvt"],
-                    // see https://maplibre.org/maplibre-style-spec/sources/#vector
-                    url: "pmtiles://assets/map/spb.pmtiles",
-                },
-            },
-            layers: basemaps.layers("metla_source", basemaps.namedFlavor("light"), {lang: "ru"}),
-        },
+        style: "assets/map/basemaps-assets/style.json",
     });
 
     map.addControl(new maplibregl.NavigationControl({
         showZoom: true,
         showCompass: false,
     }));
+
+    map.addControl(new maplibregl.ScaleControl({
+        maxWidth: 100,
+        unit: "metric",
+    }), "top-right");
+
+    map.on("click", (e) => {
+        const features = map.queryRenderedFeatures(e.point);
+
+        // Limit the number of properties we're displaying for
+        // legibility and performance
+        const displayProperties = [
+            "type",
+            "properties",
+            "id",
+            "layer",
+            "source",
+            "sourceLayer",
+            "state",
+        ];
+
+        const displayFeatures = features.map((feat) => {
+            const displayFeat = {};
+            displayProperties.forEach((prop) => {
+                displayFeat[prop] = feat[prop];
+            });
+            return displayFeat;
+        });
+
+        document.getElementById("features").innerHTML = JSON.stringify(
+            displayFeatures,
+            null,
+            2,
+        );
+    });
+
+    map.on("zoom", (e) => {
+        document.getElementById("zoom").innerHTML = map.getZoom();
+    });
 </script>
 {{end}}
