@@ -7,9 +7,11 @@ Metla
 <script src="/assets/js/third_party/pmtiles.js"></script>
 <link rel="stylesheet" type="text/css" href="/assets/css/third_party/maplibre-gl.css">
 
-<div id="map" class="fullsize"></div>
-<pre id="features"></pre>
-<div id="zoom"></div>
+<div id="map" class="fullsize" style="z-index: 1;">
+    <div id="zoom" style="z-index: 2; position: absolute; top: 10px; left: 10px;">Zoom: <span id="zoomNum"></span></div>
+</div>
+
+<pre id="features" style="z-index: 2;"></pre>
 
 <script>
     let protocol = new pmtiles.Protocol({metadata: true});
@@ -64,8 +66,16 @@ Metla
         );
     });
 
+    function onZoom(e) {
+        document.getElementById("zoomNum").innerHTML = map.getZoom().toFixed(2);
+    }
+
     map.on("zoom", (e) => {
-        document.getElementById("zoom").innerHTML = map.getZoom();
+        onZoom(e);
+    });
+
+    map.on("load", (e) => {
+        onZoom(e);
     });
 </script>
 {{end}}
