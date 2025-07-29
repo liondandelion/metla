@@ -49,6 +49,7 @@ main {
 .header {
     flex: 0 0 32px;
     position: sticky;
+    top: 0;
     z-index: 100;
     background-color: white;
     margin: 0;
