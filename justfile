@@ -62,3 +62,22 @@ vet:
 
 fetch-pmtiles:
     go-pmtiles extract https://build.protomaps.com/20250722.pmtiles ./web/map/spb.pmtiles --bbox=29.410000,59.615000,30.780000,60.265000
+
+generate-style:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+
+    pushd ./misc/basemaps/styles
+    npm ci
+    npm run generate_style style.json pmtiles://assets/map/spb.pmtiles light ru
+    popd
+
+populate-misc:
+    mkdir -p misc
+
+    wget --no-check-certificate https://github.com/openstreetmap/osmosis/releases/download/0.49.2/osmosis-0.49.2.tar -O ./misc/osmosis.tar
+    tar -C ./misc -xvf ./misc/osmosis.tar
+    mv ./misc/osmosis-0.49.2 ./misc/osmosis
+    rm ./misc/osmosis.tar
+
+    git clone git@github.com:protomaps/basemaps.git
