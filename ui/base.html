@@ -14,31 +14,31 @@
     </head>
 
     <body>
-        <header class="flex-container header">
-            <nav class="flex-container navbar">
-                <ul class="flex-container navbar left">
-                    <li>
+        <header class="header">
+            <nav class="navigation_bar">
+                <ul class="navigation_bar_left_side">
+                    <li class="navigation_bar_list_item">
                         <a href="/" class="left">Metla</a>
                     </li>
                 </ul>
-                <ul class="flex-container navbar right">
+                <ul class="navigation_bar_right_side">
                     {{if .IsAuthenticated}}
-                        <li>
+                        <li class="navigation_bar_list_item">
                             <a href="/user">Profile</a>
                         </li>
                         {{if .IsAdmin}}
-                            <li>
+                            <li class="navigation_bar_list_item">
                                 <a href="/userstable">Users</a>
                             </li>
                         {{end}}
-                        <li>
+                        <li class="navigation_bar_list_item">
                             <a href="/logout">Logout</a>
                         </li>
                     {{else}}
-                        <li>
+                        <li class="navigation_bar_list_item">
                             <a href="/register">Register</a>
                         </li>
-                        <li>
+                        <li class="navigation_bar_list_item">
                             <a href="/login">Login</a>
                         </li>
                     {{end}}
