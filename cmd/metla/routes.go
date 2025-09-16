@@ -67,6 +67,12 @@ func RegisterPost(w http.ResponseWriter, r *http.Request) *MetlaError {
 		return &MetlaError{"RegisterPost", "failed to insert user", err, http.StatusInternalServerError}
 	}
 
+	data := sessionManager.Get(r.Context(), "UserData").(UserData)
+	data.Username = username
+	data.IsAuthenticated = true
+	sessionManager.RenewToken(r.Context())
+	sessionManager.Put(r.Context(), "UserData", data)
+
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 	return nil
 }
