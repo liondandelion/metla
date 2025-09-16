@@ -85,7 +85,7 @@ func main() {
 		r.Use(EnsureUserDataExists)
 		r.Use(EnsureUserExists)
 
-		r.Method("GET", "/", MetlaHandler(Index))
+		r.Method("GET", "/", MetlaHandler(Map))
 		r.Method("GET", "/login", MetlaHandler(Login))
 		r.Method("POST", "/login", MetlaHandler(LoginPost))
 		r.Method("POST", "/login/otp", MetlaHandler(LoginOTP))

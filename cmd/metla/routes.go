@@ -36,11 +36,11 @@ func FileServer(r chi.Router, path string, root http.FileSystem) {
 	})
 }
 
-func Index(w http.ResponseWriter, r *http.Request) *MetlaError {
+func Map(w http.ResponseWriter, r *http.Request) *MetlaError {
 	data := sessionManager.Get(r.Context(), "UserData").(UserData)
-	err := templateCache.pages["index.html"].ExecuteTemplate(w, "base", data)
+	err := templateCache.pages["map.html"].ExecuteTemplate(w, "base", data)
 	if err != nil {
-		return &MetlaError{"Index", "failed to render", err, http.StatusInternalServerError}
+		return &MetlaError{"Map", "failed to render", err, http.StatusInternalServerError}
 	}
 	return nil
 }
