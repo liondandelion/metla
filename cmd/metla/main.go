@@ -3,13 +3,9 @@ package main
 import (
 	"context"
 	"crypto/cipher"
-	"encoding/gob"
-	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"os"
-	fp "path/filepath"
 	"thirdparty/gosthp/gosthp"
 	"time"
 
@@ -19,17 +15,13 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+
+	mdb "github.com/liondandelion/metla/internal/db"
+	mhttp "github.com/liondandelion/metla/internal/http"
+	mware "github.com/liondandelion/metla/internal/middleware"
 )
 
-type TemplateCache struct {
-	pages         map[string]*template.Template
-	htmxResponses map[string]*template.Template
-}
-
 var assetsDirPath = "web"
-var sessionManager *scs.SessionManager
-var dbPool *pgxpool.Pool
-var templateCache TemplateCache
 var ghGCM cipher.AEAD
 
 func main() {
@@ -38,14 +30,12 @@ func main() {
 		log.Fatalf("Main: unable to load .env: %v\n", err)
 	}
 
-	gob.Register(UserData{})
-
-	templateCache, err = newTemplateCache()
+	tc, err := mhttp.NewTemplateCache()
 	if err != nil {
 		log.Fatalf("Main: unable to create template cache: %v\n", err)
 	}
 
-	dbPool, err = pgxpool.New(context.Background(), os.Getenv("POSTGRES_URL"))
+	dbPool, err := pgxpool.New(context.Background(), os.Getenv("POSTGRES_URL"))
 	if err != nil {
 		log.Fatalf("Main: unable to create connection pool: %v\n", err)
 	}
@@ -56,9 +46,11 @@ func main() {
 		log.Fatalf("Main: failed to ping db: %v\n", err)
 	}
 
-	sessionManager = scs.New()
+	sessionManager := scs.New()
 	sessionManager.Store = pgxstore.New(dbPool)
 	sessionManager.Lifetime = 12 * time.Hour
+
+	db := mdb.Create(dbPool, sessionManager)
 
 	gosthp.InitCipher()
 	symKey, err := os.ReadFile(os.Getenv("SYM_KEY_FILEPATH"))
@@ -78,126 +70,46 @@ func main() {
 	r.Use(middleware.Logger)
 
 	assetsDir := http.Dir(assetsDirPath)
-	FileServer(r, "/assets", assetsDir)
+	mhttp.FileServer(r, "/assets", assetsDir)
 
 	r.Group(func(r chi.Router) {
 		r.Use(sessionManager.LoadAndSave)
-		r.Use(EnsureUserDataExists)
-		r.Use(EnsureUserExists)
+		r.Use(mware.EnsureUserExists(db))
 
-		r.Method("GET", "/", MetlaHandler(Map))
-		r.Method("GET", "/login", MetlaHandler(Login))
-		r.Method("POST", "/login", MetlaHandler(LoginPost))
-		r.Method("POST", "/login/otp", MetlaHandler(LoginOTP))
+		r.Method("GET", "/", mhttp.Map(db, tc))
+		r.Method("GET", "/login", mhttp.Login(db, tc))
+		r.Method("POST", "/login", mhttp.LoginPost(db, tc))
+		r.Method("POST", "/login/otp", mhttp.LoginOTP(db, tc, ghGCM))
 
 		r.Route("/register", func(r chi.Router) {
-			r.Method("GET", "/", MetlaHandler(Register))
-			r.Method("POST", "/", MetlaHandler(RegisterPost))
-			r.Method("POST", "/username", MetlaHandler(RegisterExists))
+			r.Method("GET", "/", mhttp.Register(db, tc))
+			r.Method("POST", "/", mhttp.RegisterPost(db, tc))
+			r.Method("POST", "/username", mhttp.RegisterExists(db, tc))
 		})
 
 		r.Group(func(r chi.Router) {
-			r.Use(Auth)
+			r.Use(mware.Auth(db))
 
-			r.Method("GET", "/logout", MetlaHandler(Logout))
+			r.Method("GET", "/logout", mhttp.Logout(db))
 
 			r.Route("/user", func(r chi.Router) {
-				r.Method("GET", "/", MetlaHandler(User))
-				r.Method("GET", "/password", MetlaHandler(PasswordChange))
-				r.Method("POST", "/password", MetlaHandler(PasswordChangePost))
-				r.Method("POST", "/password/check", MetlaHandler(PasswordCheck))
+				r.Method("GET", "/", mhttp.User(db, tc))
+				r.Method("GET", "/password", mhttp.PasswordChange(db, tc))
+				r.Method("POST", "/password", mhttp.PasswordChangePost(db, tc))
+				r.Method("POST", "/password/check", mhttp.PasswordCheck(db, tc))
 
-				r.Method("GET", "/otp/enable", MetlaHandler(OTPEnable))
-				r.Method("POST", "/otp/enable", MetlaHandler(OTPEnablePost))
-				r.Method("GET", "/otp/disable", MetlaHandler(OTPDisable))
+				r.Method("GET", "/otp/enable", mhttp.OTPEnable(db, tc, ghGCM))
+				r.Method("POST", "/otp/enable", mhttp.OTPEnablePost(db, tc, ghGCM))
+				r.Method("GET", "/otp/disable", mhttp.OTPDisable(db, tc))
 			})
 
 			r.Group(func(r chi.Router) {
-				r.Use(Admin)
+				r.Use(mware.Admin(db))
 
-				r.Method("GET", "/userstable", MetlaHandler(UsersTable))
+				r.Method("GET", "/userstable", mhttp.UsersTable(db, tc))
 			})
 		})
 	})
 
 	http.ListenAndServe(":3001", r)
-}
-
-func newTemplateCache() (TemplateCache, error) {
-	cache := TemplateCache{
-		pages:         map[string]*template.Template{},
-		htmxResponses: map[string]*template.Template{},
-	}
-
-	pages, err := fp.Glob("./ui/pages/*.html")
-	if err != nil {
-		return cache, err
-	}
-
-	for _, page := range pages {
-		name := fp.Base(page)
-
-		ts, err := template.ParseFiles("./ui/base.html")
-		if err != nil {
-			return cache, err
-		}
-
-		//ts, err = ts.ParseGlob("./ui/parts/*.html")
-		//if err != nil {
-		//	return nil, err
-		//}
-
-		ts, err = ts.ParseFiles(page)
-		if err != nil {
-			return cache, err
-		}
-
-		cache.pages[name] = ts
-	}
-
-	htmxResponses, err := fp.Glob("./ui/htmx/*.html")
-	if err != nil {
-		return cache, err
-	}
-
-	for _, htmx := range htmxResponses {
-		name := fp.Base(htmx)
-
-		ts, err := template.ParseFiles(htmx)
-		if err != nil {
-			return cache, err
-		}
-
-		cache.htmxResponses[name] = ts
-	}
-
-	return cache, nil
-}
-
-type MetlaError struct {
-	Where  string
-	What   string
-	Err    error
-	Status int
-}
-
-func (e *MetlaError) Error() string {
-	return fmt.Sprintf("%s: %s: %v", e.Where, e.What, e.Err)
-}
-
-type MetlaHandler func(http.ResponseWriter, *http.Request) *MetlaError
-
-func (fn MetlaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if err := fn(w, r); err != nil {
-		log.Printf("Error: %v", err.Error())
-		switch err.Status {
-		default:
-			http.Error(w, http.StatusText(err.Status), err.Status)
-		}
-	}
-}
-
-type UserData struct {
-	Username                               string
-	IsAuthenticated, IsAdmin, IsOTPEnabled bool
 }
