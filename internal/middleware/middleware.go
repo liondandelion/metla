@@ -30,7 +30,7 @@ func Admin(db db.DB) func(next http.Handler) http.Handler {
 			data := db.UserSessionDataGet(r.Context())
 
 			if !data.IsAdmin {
-				return &mhttp.MetlaError{"Admin", "Access denied", nil, http.StatusForbidden}
+				return &mhttp.MetlaError{Where: "Admin", What: "Access denied", Err: nil, Status: http.StatusForbidden}
 			}
 
 			w.Header().Add("Cache-Control", "no-store")
@@ -53,7 +53,7 @@ func EnsureUserExists(db db.DB) func(next http.Handler) http.Handler {
 
 			exists, err := db.UserExists(data.Username)
 			if err != nil {
-				return &mhttp.MetlaError{"EnsureUserExists", "failed to query or scan db", err, http.StatusInternalServerError}
+				return &mhttp.MetlaError{Where: "EnsureUserExists", What: "failed to query or scan db", Err: err, Status: http.StatusInternalServerError}
 			}
 
 			if !exists {
@@ -63,12 +63,12 @@ func EnsureUserExists(db db.DB) func(next http.Handler) http.Handler {
 
 			data.IsAdmin, err = db.UserIsAdmin(data.Username)
 			if err != nil {
-				return &mhttp.MetlaError{"EnsureUserExists", "failed to query or scan db", err, http.StatusInternalServerError}
+				return &mhttp.MetlaError{Where: "EnsureUserExists", What: "failed to query or scan db", Err: err, Status: http.StatusInternalServerError}
 			}
 
 			data.IsOTPEnabled, err = db.UserIsOTPEnabled(data.Username)
 			if err != nil {
-				return &mhttp.MetlaError{"EnsureUserExists", "failed to query or scan db", err, http.StatusInternalServerError}
+				return &mhttp.MetlaError{Where: "EnsureUserExists", What: "failed to query or scan db", Err: err, Status: http.StatusInternalServerError}
 			}
 
 			db.UserSessionDataSet(data, r.Context())

@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"html/template"
 	"image/png"
 	"log"
 	"net/http"
@@ -29,11 +28,6 @@ type MetlaError struct {
 }
 
 type MetlaHandler func(http.ResponseWriter, *http.Request) *MetlaError
-
-type TemplateCache struct {
-	pages         map[string]*template.Template
-	htmxResponses map[string]*template.Template
-}
 
 func (e *MetlaError) Error() string {
 	return fmt.Sprintf("%s: %s: %v", e.Where, e.What, e.Err)
@@ -99,7 +93,7 @@ func RegisterPost(db mdb.DB) http.Handler {
 		password := []byte(r.PostFormValue("password"))
 		confirm := []byte(r.PostFormValue("confirm"))
 
-		exists, err := db.UserExists(username)
+		exists, _ := db.UserExists(username)
 		if exists {
 			node := mhtmx.Error("serverResponse", "This user already exists")
 			if err := node.Render(w); err != nil {
@@ -119,7 +113,7 @@ func RegisterPost(db mdb.DB) http.Handler {
 		hash, _ := HashPassword(password)
 		isAdmin := false
 
-		err = db.UserInsert(username, hash, isAdmin)
+		err := db.UserInsert(username, hash, isAdmin)
 		if err != nil {
 			return &MetlaError{"RegisterPost", "failed to insert user", err, http.StatusInternalServerError}
 		}
