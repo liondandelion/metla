@@ -3,14 +3,14 @@ package middleware
 import (
 	"net/http"
 
-	mhttp "github.com/liondandelion/metla/internal/http"
 	"github.com/liondandelion/metla/internal/db"
+	mhttp "github.com/liondandelion/metla/internal/http"
 )
 
 func Auth(db db.DB) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return mhttp.MetlaHandler(func(w http.ResponseWriter, r *http.Request) *mhttp.MetlaError {
-			data := db.UserDataGet(r.Context())
+			data := db.UserSessionDataGet(r.Context())
 
 			if !data.IsAuthenticated {
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
@@ -27,7 +27,7 @@ func Auth(db db.DB) func(next http.Handler) http.Handler {
 func Admin(db db.DB) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return mhttp.MetlaHandler(func(w http.ResponseWriter, r *http.Request) *mhttp.MetlaError {
-			data := db.UserDataGet(r.Context())
+			data := db.UserSessionDataGet(r.Context())
 
 			if !data.IsAdmin {
 				return &mhttp.MetlaError{"Admin", "Access denied", nil, http.StatusForbidden}
@@ -43,8 +43,8 @@ func Admin(db db.DB) func(next http.Handler) http.Handler {
 func EnsureUserExists(db db.DB) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return mhttp.MetlaHandler(func(w http.ResponseWriter, r *http.Request) *mhttp.MetlaError {
-			db.UserDataCreateIfDoesNotExist(r.Context())
-			data := db.UserDataGet(r.Context())
+			db.UserSessionDataCreateIfDoesNotExist(r.Context())
+			data := db.UserSessionDataGet(r.Context())
 
 			if data.Username == "" {
 				next.ServeHTTP(w, r)
@@ -71,7 +71,7 @@ func EnsureUserExists(db db.DB) func(next http.Handler) http.Handler {
 				return &mhttp.MetlaError{"EnsureUserExists", "failed to query or scan db", err, http.StatusInternalServerError}
 			}
 
-			db.UserDataSet(data, r.Context())
+			db.UserSessionDataSet(data, r.Context())
 
 			next.ServeHTTP(w, r)
 			return nil

@@ -53,7 +53,8 @@ install-tools:
     go install github.com/protomaps/go-pmtiles@latest
 
 build:
-    gofmt -w ./cmd/metla/*.go
+    gofmt -w .
+    # gofmt -w ./cmd/metla/*.go
     go build -o ./build/metla ./cmd/metla/
 
 vet:

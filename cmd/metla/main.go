@@ -29,11 +29,6 @@ func main() {
 		log.Fatalf("Main: unable to load .env: %v\n", err)
 	}
 
-	tc, err := mhttp.NewTemplateCache()
-	if err != nil {
-		log.Fatalf("Main: unable to create template cache: %v\n", err)
-	}
-
 	dbPool, err := pgxpool.New(context.Background(), os.Getenv("POSTGRES_URL"))
 	if err != nil {
 		log.Fatalf("Main: unable to create connection pool: %v\n", err)
@@ -75,16 +70,13 @@ func main() {
 		r.Use(sessionManager.LoadAndSave)
 		r.Use(mware.EnsureUserExists(db))
 
-		r.Method("GET", "/", mhttp.Map(db, tc))
-		r.Method("GET", "/login", mhttp.Login(db, tc))
-		r.Method("POST", "/login", mhttp.LoginPost(db, tc))
-		r.Method("POST", "/login/otp", mhttp.LoginOTP(db, tc, ghGCM))
+		r.Method("GET", "/", mhttp.Map(db))
+		r.Method("GET", "/login", mhttp.Login(db))
+		r.Method("POST", "/login", mhttp.LoginPost(db))
+		r.Method("POST", "/login/otp", mhttp.LoginOTP(db, ghGCM))
 
-		r.Route("/register", func(r chi.Router) {
-			r.Method("GET", "/", mhttp.Register(db, tc))
-			r.Method("POST", "/", mhttp.RegisterPost(db, tc))
-			r.Method("POST", "/username", mhttp.RegisterExists(db, tc))
-		})
+		r.Method("GET", "/register", mhttp.Register(db))
+		r.Method("POST", "/register", mhttp.RegisterPost(db))
 
 		r.Group(func(r chi.Router) {
 			r.Use(mware.Auth(db))
@@ -92,20 +84,21 @@ func main() {
 			r.Method("GET", "/logout", mhttp.Logout(db))
 
 			r.Route("/user", func(r chi.Router) {
-				r.Method("GET", "/", mhttp.User(db, tc))
-				r.Method("GET", "/password", mhttp.PasswordChange(db, tc))
-				r.Method("POST", "/password", mhttp.PasswordChangePost(db, tc))
-				r.Method("POST", "/password/check", mhttp.PasswordCheck(db, tc))
+				r.Method("GET", "/", mhttp.User(db))
+				r.Method("GET", "/password", mhttp.PasswordChange(db))
+				r.Method("POST", "/password", mhttp.PasswordChangePost(db))
+				r.Method("POST", "/password/otp", mhttp.PasswordChangeOTP(db, ghGCM))
 
-				r.Method("GET", "/otp/enable", mhttp.OTPEnable(db, tc, ghGCM))
-				r.Method("POST", "/otp/enable", mhttp.OTPEnablePost(db, tc, ghGCM))
-				r.Method("GET", "/otp/disable", mhttp.OTPDisable(db, tc))
+				r.Method("GET", "/otp/enable", mhttp.OTPEnable(db, ghGCM))
+				r.Method("POST", "/otp/enable", mhttp.OTPEnablePost(db, ghGCM))
+				r.Method("GET", "/otp/disable", mhttp.OTPDisable(db, ghGCM))
+				r.Method("POST", "/otp/disable", mhttp.OTPDisable(db, ghGCM))
 			})
 
 			r.Group(func(r chi.Router) {
 				r.Use(mware.Admin(db))
 
-				r.Method("GET", "/userstable", mhttp.UsersTable(db, tc))
+				r.Method("GET", "/userstable", mhttp.UserTable(db))
 			})
 		})
 	})
