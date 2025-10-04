@@ -22,7 +22,6 @@ import (
 )
 
 var assetsDirPath = "web"
-var ghGCM cipher.AEAD
 
 func main() {
 	err := godotenv.Load()
@@ -61,7 +60,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Main: unable to create cipher: %v\n", err)
 	}
-	ghGCM, err = cipher.NewGCM(gh)
+	ghGCM, err := cipher.NewGCM(gh)
 	if err != nil {
 		log.Fatalf("Main: unable to create GCM mode: %v\n", err)
 	}
