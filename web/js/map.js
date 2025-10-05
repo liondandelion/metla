@@ -1,6 +1,51 @@
 let protocol = new pmtiles.Protocol({metadata: true});
 maplibregl.addProtocol("pmtiles", protocol.tile);
 
+let mapState = {
+    clickPlacesMarker: false,
+    clickRemovesMarker: false,
+    markerFollowsMouse: null,
+    markersArray: [],
+};
+
+function placeMarker() {
+    mapState.clickPlacesMarker = true;
+    mapState.clickRemovesMarker = false;
+}
+
+function removeMarker() {
+    mapState.clickRemovesMarker = true;
+    mapState.clickPlacesMarker = false;
+}
+
+function onMouseLeftMap() {
+    return
+    if (mapState.markerFollowsMouse !== null) {
+        mapState.markerFollowsMouse.remove();
+        mapState.markerFollowsMouse = null;
+        mapState.clickPlacesMarker = false;
+    }
+}
+
+function onZoom(e) {
+    document.getElementById("zoomNum").innerHTML = map.getZoom().toFixed(2);
+}
+
+function markersToGeoJSON() {
+    const geojson = {
+        type: "FeatureCollection",
+        features: mapState.markersArray.map(marker => ({
+            type: "Feature",
+            geometry: {
+                type: "Point",
+                coordinates: [marker.getLngLat().lng, marker.getLngLat().lat]
+            },
+        }))
+    };
+    console.log(JSON.stringify(geojson, null, 2));
+    return geojson;
+}
+
 var map = new maplibregl.Map({
     container: 'map', // container id
     //style: 'https://demotiles.maplibre.org/style.json', // style URL
@@ -48,11 +93,32 @@ map.on("click", (e) => {
         null,
         2,
     );
-});
 
-function onZoom(e) {
-    document.getElementById("zoomNum").innerHTML = map.getZoom().toFixed(2);
-}
+    const lngLat = e.lngLat;
+
+    if (mapState.clickPlacesMarker) {
+        const marker = new maplibregl.Marker()
+            .setLngLat(lngLat)
+            .addTo(map);
+
+        marker.getElement().addEventListener("click", () => {
+            if (mapState.clickRemovesMarker) {
+                mapState.markersArray = mapState.markersArray.filter(m => m !== marker);
+                marker.remove();
+                mapState.clickRemovesMarker = false;
+            }
+        });
+
+        mapState.markersArray.push(marker);
+
+        mapState.clickPlacesMarker = false;
+        if (mapState.markerFollowsMouse !== null) {
+            mapState.markerFollowsMouse.remove()
+            mapState.markerFollowsMouse = null;
+        }
+        console.log(`Marker placed at: ${lngLat.lng}, ${lngLat.lat}`);
+    }
+});
 
 map.on("zoom", (e) => {
     onZoom(e);
@@ -62,3 +128,13 @@ map.on("load", (e) => {
     onZoom(e);
 });
 
+map.on("mousemove", (e) => {
+    if (mapState.clickPlacesMarker) {
+        const lngLat = e.lngLat;
+        if (mapState.markerFollowsMouse === null) {
+            mapState.markerFollowsMouse = new maplibregl.Marker()
+            .setLngLat(lngLat)
+            .addTo(map);
+        } else mapState.markerFollowsMouse.setLngLat(lngLat);
+    }
+});

@@ -50,11 +50,29 @@ func Map(userSession mdb.UserSessionData) g.Node {
 			gh.Div(gh.Class("map"),
 				gh.Aside(gh.Class("map-sidebar"),
 					g.Group{
+						gh.Button(g.Text("Add marker"),
+							mc.Hyperscript(`
+								on click call placeMarker()
+							`),
+						),
+						gh.Button(g.Text("Remove marker"),
+							mc.Hyperscript(`
+								on click call removeMarker()
+							`),
+						),
+						gh.Button(g.Text("To geojson"),
+							mc.Hyperscript(`
+								on click call markersToGeoJSON()
+							`),
+						),
 						gh.P(g.Text("Sidebar! AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")),
 						gh.P(g.Text("Sidebar! AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")),
 					},
 				),
 				gh.Div(gh.ID("map"), gh.Class("map-map"),
+					mc.Hyperscript(`
+						on mouseleave call onMouseLeftMap()
+					`),
 					gh.Div(gh.ID("zoom"),
 						g.Text("Zoom: "),
 						gh.Span(gh.ID("zoomNum")),
