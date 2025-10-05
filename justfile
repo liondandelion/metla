@@ -54,7 +54,6 @@ install-tools:
 
 build:
     gofmt -w .
-    # gofmt -w ./cmd/metla/*.go
     go build -o ./build/metla ./cmd/metla/
 
 vet:

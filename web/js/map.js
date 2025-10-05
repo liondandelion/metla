@@ -19,7 +19,6 @@ function removeMarker() {
 }
 
 function onMouseLeftMap() {
-    return
     if (mapState.markerFollowsMouse !== null) {
         mapState.markerFollowsMouse.remove();
         mapState.markerFollowsMouse = null;
