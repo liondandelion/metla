@@ -39,6 +39,8 @@ create table if not exists events
     primary key (id, author)
 );
 
+create index if not exists events_author_idx on events (author);
+
 create or replace function events_gen_new_id() returns trigger as
 $$
 begin
