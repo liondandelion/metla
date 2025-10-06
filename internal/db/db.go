@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"encoding/gob"
+	"time"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/jackc/pgx/v5"
@@ -23,6 +24,21 @@ type User struct {
 	Username     string
 	PasswordHash []byte
 	IsAdmin      bool
+}
+
+type EventLink struct {
+	ID     int64
+	Author string
+}
+
+type Event struct {
+	ID          int64
+	Author      string
+	Title       string
+	Description string
+	GeoJSON     string
+	Date        time.Time
+	Links       []EventLink
 }
 
 func Create(dbPool *pgxpool.Pool, sessionManager *scs.SessionManager) DB {
@@ -88,7 +104,10 @@ func (db DB) UserPasswordHashSet(username string, newHash []byte) error {
 }
 
 func (db DB) UserTableGet() ([]User, error) {
-	rows, _ := db.pool.Query(context.Background(), "select * from users;")
+	rows, err := db.pool.Query(context.Background(), "select * from users;")
+	if err != nil {
+		return nil, err
+	}
 	users, err := pgx.CollectRows(rows, pgx.RowToStructByName[User])
 	return users, err
 }
@@ -120,4 +139,26 @@ func (db DB) SessionGet(key string, ctx context.Context) interface{} {
 
 func (db DB) SessionRemove(key string, ctx context.Context) {
 	db.session.Remove(ctx, key)
+}
+
+func (db DB) EventInsert(e Event) error {
+	_, err := db.pool.Exec(context.Background(),
+		"insert into events (author, title, description, geojson, date, links) values ($1, $2, $3, $4, $5, $6)", e.Author, e.Title, e.Description, e.GeoJSON, e.Date, e.Links,
+	)
+	return err
+}
+
+func (db DB) EventGet(el EventLink) (Event, error) {
+	var e Event
+	err := db.pool.QueryRow(context.Background(), "select * from events where id = $1 and author = $2", el.ID, el.Author).Scan(&e.ID, &e.Author, &e.Title, &e.Description, &e.GeoJSON, &e.Date, &e.Links)
+	return e, err
+}
+
+func (db DB) UserEventGetAll(username string) ([]Event, error) {
+	rows, err := db.pool.Query(context.Background(), "select * from events where author = $1", username)
+	if err != nil {
+		return nil, err
+	}
+	e, err := pgx.CollectRows(rows, pgx.RowToStructByName[Event])
+	return e, err
 }
