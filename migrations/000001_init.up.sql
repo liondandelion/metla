@@ -33,6 +33,7 @@ create table if not exists events
     author text references users on delete cascade,
     title text not null,
     description text not null,
+    geojson jsonb not null,
     date timestamp with time zone null,
     links event_link[] null,
     primary key (id, author)
