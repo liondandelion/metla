@@ -98,8 +98,8 @@ func Register(userSession mdb.UserSessionData) g.Node {
 				gh.Label(gh.For("confirm"), g.Text("Confirm password: ")),
 				gh.Input(gh.Type("password"), gh.Name("confirm"), gh.Required()),
 				gh.Input(gh.Type("submit"), gh.Value("Register"), ghtmx.Post("/register"), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML")),
+				gh.Div(gh.ID("serverResponse")),
 			),
-			gh.Div(gh.ID("serverResponse")),
 		},
 	)
 }
@@ -119,8 +119,8 @@ func Login(userSession mdb.UserSessionData) g.Node {
 				gh.Label(gh.For("passowrd"), g.Text("Enter your password: ")),
 				gh.Input(gh.Type("password"), gh.Name("password"), gh.Required()),
 				gh.Input(gh.Type("submit"), gh.Value("Login"), ghtmx.Post("/login"), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML")),
+				gh.Div(gh.ID("serverResponse")),
 			),
-			gh.Div(gh.ID("serverResponse")),
 		},
 	)
 }
@@ -172,8 +172,8 @@ func PasswordChange(userSession mdb.UserSessionData) g.Node {
 				gh.Label(gh.For("confirm"), g.Text("Confirm new password: ")),
 				gh.Input(gh.Type("password"), gh.Name("confirm"), gh.Required()),
 				gh.Input(gh.Type("submit"), gh.Value("Change"), ghtmx.Post("/user/password"), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML")),
+				gh.Div(gh.ID("serverResponse")),
 			),
-			gh.Div(gh.ID("serverResponse")),
 		},
 	)
 }
@@ -217,7 +217,6 @@ func OTPEnable(userSession mdb.UserSessionData, service, username, secret, image
 			gh.Img(gh.Src("data:image/png;base64, "+image), gh.Style("width: 200px; height: 200px;"), gh.Alt("QR code for OTP enrollment")),
 			gh.P(g.Text("After enrollment, please enter the code below")),
 			mhtmx.FormOTP("/user/otp/enable"),
-			gh.Div(gh.ID("serverResponse")),
 		},
 	)
 }
@@ -228,7 +227,6 @@ func OTPDisable(userSession mdb.UserSessionData) g.Node {
 		userSession,
 		g.Group{
 			mhtmx.FormOTP("/user/otp/disable"),
-			gh.Div(gh.ID("serverResponse")),
 		},
 	)
 }

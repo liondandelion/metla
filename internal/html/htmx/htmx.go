@@ -26,7 +26,7 @@ func FormOTP(postTo string) g.Node {
 					on click wait 100ms then set value of #otpCode to ''
 				`),
 			),
+			gh.Div(gh.ID("serverResponse")),
 		),
-		gh.Div(gh.ID("serverResponse")),
 	}
 }
