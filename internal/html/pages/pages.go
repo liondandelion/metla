@@ -52,10 +52,14 @@ func Map(userSession mdb.UserSessionData) g.Node {
 		)
 	} else {
 		sidebar = gh.Aside(gh.ID("sidebar"), gh.Class("sidebar"),
-			gh.Button(gh.ID("btnAddEvent"), g.Text("Add event"),
-				ghtmx.Trigger("click"), ghtmx.Get("/user/event/new"),
+			gh.Div(gh.Class("sidebar-controls"),
+				gh.Button(gh.ID("btnAddEvent"), g.Text("Add event"),
+					ghtmx.Trigger("click"), ghtmx.Get("/user/event/new"),
+				),
 			),
-			gh.P(ghtmx.Trigger("intersect once"), ghtmx.Get("/user/event?page=0"), ghtmx.Swap("outerHTML")),
+			gh.Div(gh.Class("sidebar-content"),
+				gh.Article(ghtmx.Trigger("intersect once"), ghtmx.Get("/user/event?page=0"), ghtmx.Swap("outerHTML")),
+			),
 		)
 		// sidebar = gh.Aside(gh.Class("sidebar"),
 		// 	gh.Button(g.Text("Add marker"),

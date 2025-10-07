@@ -80,33 +80,42 @@ func FormOTP(postTo string) g.Node {
 	}
 }
 
+func Event(e mdb.Event) g.Node {
+	year, month, day := e.Date.Date()
+	hour, minute, sec := e.Date.Clock()
+
+	return gh.Article(gh.Class("event-card"),
+		gh.H1(g.Text(e.Title)),
+		gh.H2(g.Text(e.Author)),
+		gh.P(gh.Class("time"),
+			g.Text(fmt.Sprintf(" %02d.", day)), g.Text(fmt.Sprintf("%02d.", month)), g.Text(fmt.Sprintf("%v", year)),
+			g.Text(fmt.Sprintf(" %02d:", hour)), g.Text(fmt.Sprintf("%02d:", minute)), g.Text(fmt.Sprintf("%02d", sec)),
+		),
+	)
+}
+
+func EventLoadMore(e mdb.Event, page int) g.Node {
+	year, month, day := e.Date.Date()
+	hour, minute, sec := e.Date.Clock()
+
+	return gh.Article(gh.Class("event-card"),
+		ghtmx.Get(fmt.Sprintf("/user/event?page=%v", page+1)), ghtmx.Trigger("intersect once"), ghtmx.Swap("afterend"),
+		gh.H1(g.Text(e.Title)),
+		gh.H2(g.Text(e.Author)),
+		gh.P(gh.Class("time"),
+			g.Text(fmt.Sprintf(" %02d.", day)), g.Text(fmt.Sprintf("%02d.", month)), g.Text(fmt.Sprintf("%v", year)),
+			g.Text(fmt.Sprintf(" %02d:", hour)), g.Text(fmt.Sprintf("%02d:", minute)), g.Text(fmt.Sprintf("%02d", sec)),
+		),
+	)
+}
+
 func EventList(events []mdb.Event, page int) g.Node {
 	if len(events) == 0 {
 		return g.Raw("")
 	}
 
-	f := func(e mdb.Event) g.Node {
-		year, month, day := e.Date.Date()
-		hour, minute, sec := e.Date.Clock()
-		return gh.P(
-			g.Text(e.Title),
-			g.Text(fmt.Sprintf(" %02d.", day)), g.Text(fmt.Sprintf("%02d.", month)), g.Text(fmt.Sprintf("%v", year)),
-			g.Text(fmt.Sprintf(" %02d:", hour)), g.Text(fmt.Sprintf("%02d:", minute)), g.Text(fmt.Sprintf("%02d", sec)),
-		)
-	}
-
-	e := events[len(events)-1]
-	year, month, day := e.Date.Date()
-	hour, minute, sec := e.Date.Clock()
-
 	return g.Group{
-		g.Map(events[:len(events)-1], f),
-		gh.P(ghtmx.Get(fmt.Sprintf("/user/event?page=%v", page+1)), ghtmx.Trigger("intersect once"), ghtmx.Swap("afterend"),
-			g.Group{
-				g.Text(e.Title),
-				g.Text(fmt.Sprintf(" %02d.", day)), g.Text(fmt.Sprintf("%02d.", month)), g.Text(fmt.Sprintf("%v", year)),
-				g.Text(fmt.Sprintf(" %02d:", hour)), g.Text(fmt.Sprintf("%02d:", minute)), g.Text(fmt.Sprintf("%02d", sec)),
-			},
-		),
+		g.Map(events[:len(events)-1], Event),
+		EventLoadMore(events[len(events)-1], page+1),
 	}
 }
