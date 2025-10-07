@@ -70,10 +70,11 @@ func FormOTP(postTo string) g.Node {
 					on load put '' into me
 				`),
 			),
-			gh.Input(gh.Type("submit"), gh.Value("Send"), ghtmx.Post(postTo), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML"),
+			gh.Button(ghtmx.Post(postTo), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML"),
 				Hyperscript(`
 					on click wait 100ms then set value of #otpCode to ''
 				`),
+				g.Text("Send"),
 			),
 			gh.Div(gh.ID("serverResponse")),
 		),

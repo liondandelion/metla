@@ -27,6 +27,7 @@ main {
     grid-row: 2 / span 1;
     grid-column: 1 / span 2;
     align-self: stretch;
+    overflow: auto;
 
     border-style: none solid solid solid;
     border-width: 2px;
@@ -86,6 +87,15 @@ button {
     padding: 0 15px;
 }
 
+.otp-enable {
+    display: grid;
+    grid-row: 1 / span 1;
+    align-items: center;
+    justify-items: center;
+    grid-auto-rows: min-content;
+    overflow: auto;
+}
+
 .map-div {
     display: grid;
     position: relative;
@@ -126,9 +136,7 @@ button {
     overflow-y: auto;
 
     p {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin: 0;
+        margin: 10px;
     }
 }
 
@@ -161,6 +169,12 @@ button {
     }
 
     h1, h2 {
+        margin: 0;
+    }
+
+    p {
+        overflow: hidden;
+        text-overflow: ellipsis;
         margin: 0;
     }
 }
