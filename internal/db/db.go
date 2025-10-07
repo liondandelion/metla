@@ -154,6 +154,15 @@ func (db DB) EventGet(el EventLink) (Event, error) {
 	return e, err
 }
 
+func (db DB) UserEventGetPageStartingFrom(username string, pageSize, offset int) ([]Event, error) {
+	rows, err := db.pool.Query(context.Background(), "select * from events where author = $1 order by date limit $2 offset $3", username, pageSize, offset)
+	if err != nil {
+		return nil, err
+	}
+	e, err := pgx.CollectRows(rows, pgx.RowToStructByName[Event])
+	return e, err
+}
+
 func (db DB) UserEventGetAll(username string) ([]Event, error) {
 	rows, err := db.pool.Query(context.Background(), "select * from events where author = $1", username)
 	if err != nil {

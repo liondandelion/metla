@@ -9,6 +9,7 @@ import (
 	"image/png"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -16,7 +17,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	mdb "github.com/liondandelion/metla/internal/db"
-	mhtmx "github.com/liondandelion/metla/internal/html/htmx"
+	mc "github.com/liondandelion/metla/internal/html/components"
 	mpages "github.com/liondandelion/metla/internal/html/pages"
 )
 
@@ -95,7 +96,7 @@ func RegisterPost(db mdb.DB) http.Handler {
 
 		exists, _ := db.UserExists(username)
 		if exists {
-			node := mhtmx.Error("serverResponse", "This user already exists")
+			node := mc.Error("serverResponse", "This user already exists")
 			if err := node.Render(w); err != nil {
 				return &MetlaError{"RegisterPost", "failed to render", err, http.StatusInternalServerError}
 			}
@@ -103,7 +104,7 @@ func RegisterPost(db mdb.DB) http.Handler {
 		}
 
 		if !bytes.Equal(password, confirm) {
-			node := mhtmx.Error("serverResponse", "Passwords should match")
+			node := mc.Error("serverResponse", "Passwords should match")
 			if err := node.Render(w); err != nil {
 				return &MetlaError{"RegisterPost", "failed to render", err, http.StatusInternalServerError}
 			}
@@ -162,7 +163,7 @@ func LoginPost(db mdb.DB) http.Handler {
 		}
 
 		if !exists {
-			node := mhtmx.Error("serverResponse", "Invalid username")
+			node := mc.Error("serverResponse", "Invalid username")
 			if err := node.Render(w); err != nil {
 				return &MetlaError{"LoginPost", "failed to render", err, http.StatusInternalServerError}
 			}
@@ -176,7 +177,7 @@ func LoginPost(db mdb.DB) http.Handler {
 
 		err = bcrypt.CompareHashAndPassword(passwordHash, password)
 		if err != nil {
-			node := mhtmx.Error("serverResponse", "Invalid password")
+			node := mc.Error("serverResponse", "Invalid password")
 			if err := node.Render(w); err != nil {
 				return &MetlaError{"LoginPost", "failed to render", err, http.StatusInternalServerError}
 			}
@@ -198,7 +199,7 @@ func LoginPost(db mdb.DB) http.Handler {
 		db.UserSessionDataSet(data, r.Context())
 
 		if data.IsOTPEnabled {
-			node := mhtmx.FormOTP("/login/otp")
+			node := mc.FormOTP("/login/otp")
 			if err := node.Render(w); err != nil {
 				return &MetlaError{"LoginPost", "failed to render", err, http.StatusInternalServerError}
 			}
@@ -226,7 +227,7 @@ func LoginOTP(db mdb.DB, ghGCM cipher.AEAD) http.Handler {
 		}
 
 		if !valid {
-			node := mhtmx.Error("serverResponse", "Invalid code")
+			node := mc.Error("serverResponse", "Invalid code")
 			if err := node.Render(w); err != nil {
 				return &MetlaError{"LoginOTP", "failed to render", err, http.StatusInternalServerError}
 			}
@@ -308,7 +309,7 @@ func PasswordChangePost(db mdb.DB) http.Handler {
 
 		err = bcrypt.CompareHashAndPassword(oldPasswordHashDB, oldPassword)
 		if err != nil {
-			node := mhtmx.Error("serverResponse", "Old password is wrong")
+			node := mc.Error("serverResponse", "Old password is wrong")
 			if err := node.Render(w); err != nil {
 				return &MetlaError{"PasswordChangePost", "failed to render", err, http.StatusInternalServerError}
 			}
@@ -316,7 +317,7 @@ func PasswordChangePost(db mdb.DB) http.Handler {
 		}
 
 		if !bytes.Equal(newPassword, confirm) {
-			node := mhtmx.Error("serverResponse", "New passwords should match")
+			node := mc.Error("serverResponse", "New passwords should match")
 			if err := node.Render(w); err != nil {
 				return &MetlaError{"PasswordChangePost", "failed to render", err, http.StatusInternalServerError}
 			}
@@ -327,7 +328,7 @@ func PasswordChangePost(db mdb.DB) http.Handler {
 
 		if data.IsOTPEnabled {
 			db.SessionPut("newPasswordHash", newHash, r.Context())
-			node := mhtmx.FormOTP("/user/password/otp")
+			node := mc.FormOTP("/user/password/otp")
 			if err := node.Render(w); err != nil {
 				return &MetlaError{"PasswordChangePost", "failed to render", err, http.StatusInternalServerError}
 			}
@@ -359,7 +360,7 @@ func PasswordChangeOTP(db mdb.DB, ghGCM cipher.AEAD) http.Handler {
 		}
 
 		if !valid {
-			node := mhtmx.Error("serverResponse", "Invalid code")
+			node := mc.Error("serverResponse", "Invalid code")
 			if err := node.Render(w); err != nil {
 				return &MetlaError{"PasswordChangeOTP", "failed to render", err, http.StatusInternalServerError}
 			}
@@ -432,7 +433,7 @@ func OTPEnablePost(db mdb.DB, ghGCM cipher.AEAD) http.Handler {
 		valid := totp.Validate(otpCode, otpSecret)
 
 		if !valid {
-			node := mhtmx.Error("serverResponse", "Invalid code")
+			node := mc.Error("serverResponse", "Invalid code")
 			if err := node.Render(w); err != nil {
 				return &MetlaError{"OTPEnablePost", "failed to render", err, http.StatusInternalServerError}
 			}
@@ -475,7 +476,7 @@ func OTPDisable(db mdb.DB, ghGCM cipher.AEAD) http.Handler {
 		}
 
 		if !valid {
-			node := mhtmx.Error("serverResponse", "Invalid code")
+			node := mc.Error("serverResponse", "Invalid code")
 			if err := node.Render(w); err != nil {
 				return &MetlaError{"OTPDisable", "failed to render", err, http.StatusInternalServerError}
 			}
@@ -497,34 +498,35 @@ func OTPDisable(db mdb.DB, ghGCM cipher.AEAD) http.Handler {
 	})
 }
 
-// Helper functions
+func EventGet(db mdb.DB) http.Handler {
+	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
+		queryParams := r.URL.Query()
+		data := db.UserSessionDataGet(r.Context())
 
-func OTPValidate(username, otpCode string, db mdb.DB, ghGCM cipher.AEAD) (bool, error) {
-	otpSecretEnc, err := db.UserOTPSecretGet(username)
-	if err != nil {
-		log.Printf("OTPValidate: failed to get secret: %v", err)
-		return false, err
-	}
+		pageSize := 10
+		page, err := strconv.Atoi(queryParams.Get("page"))
+		if err != nil {
+			return &MetlaError{"EventGet", "failed to convert page param to int", err, http.StatusInternalServerError}
+		}
 
-	nonce := sha256.Sum256([]byte(username))
-	otpSecretB, err := ghGCM.Open(nil, nonce[:12], otpSecretEnc, nil)
-	if err != nil {
-		log.Printf("OTPIsCodeValid: failed to open: %v", err)
-		return false, err
-	}
-	otpSecret := string(otpSecretB)
+		log.Printf("get page: %v", page)
 
-	return totp.Validate(otpCode, otpSecret), nil
-}
+		var events []mdb.Event
+		if !queryParams.Has("page") {
+			events, err = db.UserEventGetAll(data.Username)
+		} else {
+			events, err = db.UserEventGetPageStartingFrom(data.Username, pageSize, page*pageSize)
+		}
 
-func HashPassword(password []byte) ([]byte, error) {
-	/* encodedSaltSize = 22 bytes */
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 12)
-	return bytes, err
-}
+		if err != nil {
+			return &MetlaError{"EventGet", "failed to retrieve events", err, http.StatusInternalServerError}
+		}
 
-func HTMXRedirect(w http.ResponseWriter, path string) {
-	h := w.Header()
-	h.Set("HX-Redirect", path)
-	w.WriteHeader(http.StatusOK)
+		node := mc.EventList(events, page)
+		if err := node.Render(w); err != nil {
+			return &MetlaError{"EventGet", "failed to render", err, http.StatusInternalServerError}
+		}
+
+		return nil
+	})
 }
