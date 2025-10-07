@@ -43,10 +43,11 @@ func Map(userSession mdb.UserSessionData) g.Node {
 
 	if !userSession.IsAuthenticated {
 		sidebar = gh.Aside(gh.ID("sidebar"), gh.Class("sidebar"),
-			gh.P(g.Text("There is nothing to show here yet. Please "),
-				gh.A(gh.Href("/register"), gh.U(g.Text("register"))),
+			gh.P(gh.Style("line-height: 2em;"),
+				g.Text("There is nothing to show here yet. Please "),
+				gh.A(gh.Class("button-like"), gh.Href("/register"), g.Text("register")),
 				g.Text(" or "),
-				gh.A(gh.Href("/login"), gh.U(g.Text("login"))),
+				gh.A(gh.Class("button-like"), gh.Href("/login"), g.Text("login")),
 				g.Text(" to see more."),
 			),
 		)

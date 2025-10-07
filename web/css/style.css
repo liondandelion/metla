@@ -50,11 +50,32 @@ table {
 
 a {
     text-decoration: none;
-    color: #404040;
+    color: black;
 }
 
 button {
+    border: solid;
+    border-width: 2px;
     border-radius: 0;
+    border-color: black;
+    box-shadow: 2px 2px 0 0 rgb(0, 0, 0);
+    background-color: lavender;
+}
+
+button:hover {
+    box-shadow: 2px 2px 0 0 inset rgb(0, 0, 0);
+}
+
+.button-like {
+    border: solid;
+    border-width: 2px;
+    box-shadow: 2px 2px 0 0 rgb(0, 0, 0);
+    padding: 5px;
+    background-color: lavender;
+}
+
+.button-like:hover {
+    box-shadow: 2px 2px 0 0 inset rgb(0, 0, 0);
 }
 
 .navbar {
@@ -144,6 +165,7 @@ button {
     display: grid;
     grid-auto-rows: min-content;
     grid-row: 1 / span 1;
+    padding: 5px;
 }
 
 .sidebar-content {
@@ -156,8 +178,7 @@ button {
 
 .event-card {
     padding: 10px;
-    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
-    transition: 0.3s;
+    box-shadow: 2px 2px 4px 0 rgb(0, 0, 0);
 
     h1 {
         font-size: 1.5em;
@@ -180,7 +201,8 @@ button {
 }
 
 .event-card:hover {
-    background: rgba(0, 0, 0, 0.1);
+    background-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 2px 2px 4px 0 inset rgb(0, 0, 0);
 }
 
 .time {
