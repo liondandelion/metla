@@ -58,7 +58,7 @@ func Map(userSession mdb.UserSessionData) g.Node {
 				),
 			),
 			gh.Div(gh.Class("sidebar-content"),
-				gh.Article(ghtmx.Trigger("intersect once"), ghtmx.Get("/user/event?page=0"), ghtmx.Swap("outerHTML")),
+				mc.AnchorEventLoadMore(0),
 			),
 		)
 		// sidebar = gh.Aside(gh.Class("sidebar"),

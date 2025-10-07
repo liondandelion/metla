@@ -94,19 +94,8 @@ func Event(e mdb.Event) g.Node {
 	)
 }
 
-func EventLoadMore(e mdb.Event, page int) g.Node {
-	year, month, day := e.Date.Date()
-	hour, minute, sec := e.Date.Clock()
-
-	return gh.Article(gh.Class("event-card"),
-		ghtmx.Get(fmt.Sprintf("/user/event?page=%v", page+1)), ghtmx.Trigger("intersect once"), ghtmx.Swap("afterend"),
-		gh.H1(g.Text(e.Title)),
-		gh.H2(g.Text(e.Author)),
-		gh.P(gh.Class("time"),
-			g.Text(fmt.Sprintf(" %02d.", day)), g.Text(fmt.Sprintf("%02d.", month)), g.Text(fmt.Sprintf("%v", year)),
-			g.Text(fmt.Sprintf(" %02d:", hour)), g.Text(fmt.Sprintf("%02d:", minute)), g.Text(fmt.Sprintf("%02d", sec)),
-		),
-	)
+func AnchorEventLoadMore(nextPage int) g.Node {
+	return gh.Article(ghtmx.Get(fmt.Sprintf("/user/event?page=%v", nextPage)), ghtmx.Trigger("intersect once"), ghtmx.Swap("afterend"))
 }
 
 func EventList(events []mdb.Event, page int) g.Node {
@@ -115,7 +104,7 @@ func EventList(events []mdb.Event, page int) g.Node {
 	}
 
 	return g.Group{
-		g.Map(events[:len(events)-1], Event),
-		EventLoadMore(events[len(events)-1], page),
+		g.Map(events, Event),
+		AnchorEventLoadMore(page + 1),
 	}
 }

@@ -509,8 +509,6 @@ func EventGet(db mdb.DB) http.Handler {
 			return &MetlaError{"EventGet", "failed to convert page param to int", err, http.StatusInternalServerError}
 		}
 
-		log.Printf("get page: %v", page)
-
 		var events []mdb.Event
 		if !queryParams.Has("page") {
 			events, err = db.UserEventGetAll(data.Username)
