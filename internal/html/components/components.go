@@ -116,6 +116,6 @@ func EventList(events []mdb.Event, page int) g.Node {
 
 	return g.Group{
 		g.Map(events[:len(events)-1], Event),
-		EventLoadMore(events[len(events)-1], page+1),
+		EventLoadMore(events[len(events)-1], page),
 	}
 }
