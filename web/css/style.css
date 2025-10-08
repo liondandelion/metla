@@ -66,6 +66,10 @@ button:hover {
     box-shadow: 2px 2px 0 0 inset rgb(0, 0, 0);
 }
 
+textarea {
+    resize: vertical;
+}
+
 .button-like {
     border: solid;
     border-width: 2px;

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/pquerna/otp/totp"
@@ -520,10 +521,58 @@ func EventGet(db mdb.DB) http.Handler {
 			return &MetlaError{"EventGet", "failed to retrieve events", err, http.StatusInternalServerError}
 		}
 
-		node := mc.EventList(events, page)
+		node := mc.EventCardList(events, page)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventGet", "failed to render", err, http.StatusInternalServerError}
 		}
+
+		return nil
+	})
+}
+
+func EventNewGet(db mdb.DB) http.Handler {
+	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
+		node := mc.EventNew()
+		if err := node.Render(w); err != nil {
+			return &MetlaError{"EventNewGet", "failed to render", err, http.StatusInternalServerError}
+		}
+
+		return nil
+	})
+}
+
+func EventNewPost(db mdb.DB) http.Handler {
+	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
+		r.ParseForm()
+		title := r.PostFormValue("title")
+		description := r.PostFormValue("description")
+		datetime := r.PostFormValue("datetime")
+		_ = db.UserSessionDataGet(r.Context())
+
+		log.Printf("title: %v, description: %v, datetime: %v", title, description, datetime)
+
+		layout := "2006-01-02T15:04"
+		time, err := time.Parse(layout, datetime)
+		if err != nil {
+			return &MetlaError{"EventNewPost", "failed to convert time", err, http.StatusInternalServerError}
+		}
+
+		time = time.UTC()
+		log.Printf("time: %v", time)
+
+		// event := mdb.Event{
+		// 	Author:      data.Username,
+		// 	Title:       title,
+		// 	Description: description,
+		// 	GeoJSON:     `{"type": "FeatureCollection", "features": []}`,
+		// 	Date:        time.Now().UTC(),
+		// 	Links:       nil,
+		// }
+		//
+		// node := mc.EventCard(event)
+		// if err := node.Render(w); err != nil {
+		// 	return &MetlaError{"EventNewGet", "failed to render", err, http.StatusInternalServerError}
+		// }
 
 		return nil
 	})

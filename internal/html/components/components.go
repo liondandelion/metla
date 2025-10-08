@@ -57,6 +57,36 @@ func Navbar(username string, isAuthenticated, isAdmin bool) g.Node {
 	)
 }
 
+func Sidebar(isAuthenticated bool) g.Node {
+	var sidebar g.Node
+
+	if !isAuthenticated {
+		sidebar = gh.Aside(gh.ID("sidebar"), gh.Class("sidebar"),
+			gh.P(gh.Style("line-height: 2em;"),
+				g.Text("There is nothing to show here yet. Please "),
+				gh.A(gh.Class("button-like"), gh.Href("/register"), g.Text("register")),
+				g.Text(" or "),
+				gh.A(gh.Class("button-like"), gh.Href("/login"), g.Text("login")),
+				g.Text(" to see more."),
+			),
+		)
+	} else {
+		sidebar = gh.Aside(gh.ID("sidebar"), gh.Class("sidebar"),
+			gh.Div(gh.Class("sidebar-controls"),
+				gh.Button(gh.ID("btnAddEvent"), g.Text("Add event"),
+					ghtmx.Trigger("click"), ghtmx.Get("/user/event/new"), ghtmx.Swap("afterend"),
+				),
+			),
+			gh.Div(gh.Class("sidebar-content"),
+				AnchorEventNew(),
+				AnchorEventLoadMore(0),
+			),
+		)
+	}
+
+	return sidebar
+}
+
 func Error(id, message string) g.Node {
 	return gh.Div(gh.ID(id), g.Text(message))
 }
@@ -81,7 +111,7 @@ func FormOTP(postTo string) g.Node {
 	}
 }
 
-func Event(e mdb.Event) g.Node {
+func EventCard(e mdb.Event) g.Node {
 	year, month, day := e.Date.Date()
 	hour, minute, sec := e.Date.Clock()
 
@@ -99,13 +129,34 @@ func AnchorEventLoadMore(nextPage int) g.Node {
 	return gh.Article(ghtmx.Get(fmt.Sprintf("/user/event?page=%v", nextPage)), ghtmx.Trigger("intersect once"), ghtmx.Swap("afterend"))
 }
 
-func EventList(events []mdb.Event, page int) g.Node {
+func EventCardList(events []mdb.Event, page int) g.Node {
 	if len(events) == 0 {
 		return g.Raw("")
 	}
 
 	return g.Group{
-		g.Map(events, Event),
+		g.Map(events, EventCard),
 		AnchorEventLoadMore(page + 1),
 	}
+}
+
+func AnchorEventNew() g.Node {
+	return gh.Article(gh.ID("anchorEventNew"))
+}
+
+func EventNew() g.Node {
+	return gh.Form(gh.ID("formEventNew"), ghtmx.Post("/user/event/new"), ghtmx.Target("#anchorEventNew"), ghtmx.Swap("afterend"),
+		Hyperscript(`
+			on htmx:beforeSend remove me
+		`),
+		gh.Label(gh.For("title"), g.Text("Title: ")),
+		gh.Input(gh.Type("text"), gh.Name("title"), gh.ID("title"), gh.Required()),
+		gh.Label(gh.For("description"), g.Text("Description: ")),
+		gh.Textarea(gh.Name("description"), gh.ID("description"), gh.Cols("35"), gh.Required()),
+		gh.Label(gh.For("datetime"), g.Text("Date and time (optional): ")),
+		gh.Input(gh.Type("datetime-local"), gh.Name("datetime"), gh.ID("datetime")),
+		gh.Button(gh.Type("submit"),
+			g.Text("Send"),
+		),
+	)
 }

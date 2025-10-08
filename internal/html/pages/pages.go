@@ -39,50 +39,6 @@ func page(props PageProperties, userSession mdb.UserSessionData, children ...g.N
 }
 
 func Map(userSession mdb.UserSessionData) g.Node {
-	var sidebar g.Node
-
-	if !userSession.IsAuthenticated {
-		sidebar = gh.Aside(gh.ID("sidebar"), gh.Class("sidebar"),
-			gh.P(gh.Style("line-height: 2em;"),
-				g.Text("There is nothing to show here yet. Please "),
-				gh.A(gh.Class("button-like"), gh.Href("/register"), g.Text("register")),
-				g.Text(" or "),
-				gh.A(gh.Class("button-like"), gh.Href("/login"), g.Text("login")),
-				g.Text(" to see more."),
-			),
-		)
-	} else {
-		sidebar = gh.Aside(gh.ID("sidebar"), gh.Class("sidebar"),
-			gh.Div(gh.Class("sidebar-controls"),
-				gh.Button(gh.ID("btnAddEvent"), g.Text("Add event"),
-					ghtmx.Trigger("click"), ghtmx.Get("/user/event/new"),
-				),
-			),
-			gh.Div(gh.Class("sidebar-content"),
-				mc.AnchorEventLoadMore(0),
-			),
-		)
-		// sidebar = gh.Aside(gh.Class("sidebar"),
-		// 	gh.Button(g.Text("Add marker"),
-		// 		mc.Hyperscript(`
-		// 			on click call placeMarker()
-		// 		`),
-		// 	),
-		// 	gh.Button(g.Text("Remove marker"),
-		// 		mc.Hyperscript(`
-		// 			on click call removeMarker()
-		// 		`),
-		// 	),
-		// 	gh.Button(g.Text("To geojson"),
-		// 		mc.Hyperscript(`
-		// 			on click call markersToGeoJSON()
-		// 		`),
-		// 	),
-		// 	gh.P(g.Text("Sidebar! AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")),
-		// 	gh.P(g.Text("Sidebar! AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")),
-		// )
-	}
-
 	return page(
 		PageProperties{Title: "Map"},
 		userSession,
@@ -90,7 +46,7 @@ func Map(userSession mdb.UserSessionData) g.Node {
 		gh.Script(gh.Src("/assets/js/third_party/pmtiles.js")),
 		gh.Link(gh.Rel("stylesheet"), gh.Type("text/css"), gh.Href("/assets/css/third_party/maplibre-gl.css")),
 		gh.Div(gh.Class("map-div"),
-			sidebar,
+			mc.Sidebar(userSession.IsAuthenticated),
 			gh.Div(gh.ID("map"), gh.Class("map"),
 				mc.Hyperscript(`
 					on mouseleave call onMouseLeftMap()

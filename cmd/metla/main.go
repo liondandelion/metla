@@ -95,6 +95,8 @@ func main() {
 				r.Method("POST", "/otp/disable", mhttp.OTPDisable(db, ghGCM))
 
 				r.Method("GET", "/event", mhttp.EventGet(db))
+				r.Method("GET", "/event/new", mhttp.EventNewGet(db))
+				r.Method("POST", "/event/new", mhttp.EventNewPost(db))
 			})
 
 			r.Group(func(r chi.Router) {
