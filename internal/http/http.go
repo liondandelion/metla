@@ -547,32 +547,38 @@ func EventNewPost(db mdb.DB) http.Handler {
 		title := r.PostFormValue("title")
 		description := r.PostFormValue("description")
 		datetime := r.PostFormValue("datetime")
-		_ = db.UserSessionDataGet(r.Context())
+		geojson := r.PostFormValue("geojson")
+		data := db.UserSessionDataGet(r.Context())
 
-		log.Printf("title: %v, description: %v, datetime: %v", title, description, datetime)
-
-		layout := "2006-01-02T15:04"
-		time, err := time.Parse(layout, datetime)
-		if err != nil {
-			return &MetlaError{"EventNewPost", "failed to convert time", err, http.StatusInternalServerError}
+		var t time.Time
+		if datetime != "" {
+			layout := "2006-01-02T15:04"
+			var err error
+			t, err = time.Parse(layout, datetime)
+			if err != nil {
+				return &MetlaError{"EventNewPost", "failed to convert time", err, http.StatusInternalServerError}
+			}
+			t = t.UTC()
 		}
 
-		time = time.UTC()
-		log.Printf("time: %v", time)
+		event := mdb.Event{
+			Author:      data.Username,
+			Title:       title,
+			Description: description,
+			GeoJSON:     geojson,
+			Date:        t,
+			Links:       nil,
+		}
 
-		// event := mdb.Event{
-		// 	Author:      data.Username,
-		// 	Title:       title,
-		// 	Description: description,
-		// 	GeoJSON:     `{"type": "FeatureCollection", "features": []}`,
-		// 	Date:        time.Now().UTC(),
-		// 	Links:       nil,
-		// }
-		//
-		// node := mc.EventCard(event)
-		// if err := node.Render(w); err != nil {
-		// 	return &MetlaError{"EventNewGet", "failed to render", err, http.StatusInternalServerError}
-		// }
+		err := db.EventInsert(event)
+		if err != nil {
+			return &MetlaError{"EventNewPost", "failed to insert event into the db", err, http.StatusInternalServerError}
+		}
+
+		node := mc.EventCard(event)
+		if err := node.Render(w); err != nil {
+			return &MetlaError{"EventNewPost", "failed to render", err, http.StatusInternalServerError}
+		}
 
 		return nil
 	})

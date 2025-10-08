@@ -147,7 +147,7 @@ func AnchorEventNew() g.Node {
 func EventNew() g.Node {
 	return gh.Form(gh.ID("formEventNew"), ghtmx.Post("/user/event/new"), ghtmx.Target("#anchorEventNew"), ghtmx.Swap("afterend"),
 		Hyperscript(`
-			on htmx:beforeSend remove me
+			on htmx:beforeSend call markerRemoveAll() then remove me
 		`),
 		gh.Label(gh.For("title"), g.Text("Title: ")),
 		gh.Input(gh.Type("text"), gh.Name("title"), gh.ID("title"), gh.Required()),
@@ -155,7 +155,23 @@ func EventNew() g.Node {
 		gh.Textarea(gh.Name("description"), gh.ID("description"), gh.Cols("35"), gh.Required()),
 		gh.Label(gh.For("datetime"), g.Text("Date and time (optional): ")),
 		gh.Input(gh.Type("datetime-local"), gh.Name("datetime"), gh.ID("datetime")),
+		gh.Input(gh.Type("hidden"), gh.Name("geojson"), gh.ID("geojson")),
+		gh.Button(gh.Type("button"),
+			Hyperscript(`
+				on click call markerPlace()
+			`),
+			g.Text("Add marker"),
+		),
+		gh.Button(gh.Type("button"),
+			Hyperscript(`
+				on click call markerRemove()
+			`),
+			g.Text("Remove marker"),
+		),
 		gh.Button(gh.Type("submit"),
+			Hyperscript(`
+				on click call markerToGeoJSONString() then put the result into @value of #geojson
+			`),
 			g.Text("Send"),
 		),
 	)

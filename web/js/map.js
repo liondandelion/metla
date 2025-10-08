@@ -8,14 +8,21 @@ let mapState = {
     markersArray: [],
 };
 
-function placeMarker() {
+function markerPlace() {
     mapState.clickPlacesMarker = true;
     mapState.clickRemovesMarker = false;
 }
 
-function removeMarker() {
+function markerRemove() {
     mapState.clickRemovesMarker = true;
     mapState.clickPlacesMarker = false;
+}
+
+function markerRemoveAll() {
+    for (const marker of mapState.markersArray) {
+        marker.remove()
+    }
+    mapState.markersArray = []
 }
 
 function onMouseLeftMap() {
@@ -30,7 +37,7 @@ function onZoom(e) {
     document.getElementById("zoomNum").innerHTML = map.getZoom().toFixed(2);
 }
 
-function markersToGeoJSON() {
+function markerToGeoJSON() {
     const geojson = {
         type: "FeatureCollection",
         features: mapState.markersArray.map(marker => ({
@@ -43,6 +50,11 @@ function markersToGeoJSON() {
     };
     console.log(JSON.stringify(geojson, null, 2));
     return geojson;
+}
+
+function markerToGeoJSONString() {
+    const geojson =  markerToGeoJSON()
+    return JSON.stringify(geojson)
 }
 
 var map = new maplibregl.Map({
