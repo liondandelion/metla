@@ -94,9 +94,11 @@ func main() {
 				r.Method("GET", "/otp/disable", mhttp.OTPDisable(db, ghGCM))
 				r.Method("POST", "/otp/disable", mhttp.OTPDisable(db, ghGCM))
 
-				r.Method("GET", "/event", mhttp.EventGet(db))
+				r.Method("GET", "/event/page", mhttp.EventPageGet(db))
 				r.Method("GET", "/event/new", mhttp.EventNewGet(db))
 				r.Method("POST", "/event/new", mhttp.EventNewPost(db))
+				r.Method("GET", "/event/small/{author}-{id}", mhttp.EventSmallGet(db))
+				r.Method("GET", "/event/{author}-{id}", mhttp.EventGet(db))
 			})
 
 			r.Group(func(r chi.Router) {
@@ -106,37 +108,6 @@ func main() {
 			})
 		})
 	})
-
-	e := mdb.Event{
-		ID:          0,
-		Author:      "anvyko",
-		Title:       "Some title",
-		Description: "Some description",
-		GeoJSON:     `{"type": "FeatureCollection", "features": []}`,
-		Date:        time.Now().UTC(),
-		Links:       nil,
-	}
-
-	err = db.EventInsert(e)
-	if err != nil {
-		log.Printf("Error is %v", err)
-	}
-
-	e1, err := db.EventGet(mdb.EventLink{ID: 1, Author: e.Author})
-	if err != nil {
-		log.Printf("Error is %v", err)
-	} else {
-		log.Printf("%v, %v, %v, %v, %v, %v, %v", e1.ID, e1.Author, e1.Title, e1.Description, e1.GeoJSON, e1.Date, e1.Links)
-	}
-
-	e2, err := db.UserEventGetAll(e.Author)
-	if err != nil {
-		log.Printf("Error is %v", err)
-	} else {
-		for _, e := range e2 {
-			log.Printf("%v, %v, %v, %v, %v, %v, %v", e.ID, e.Author, e.Title, e.Description, e.GeoJSON, e.Date, e.Links)
-		}
-	}
 
 	http.ListenAndServe(":3001", r)
 }

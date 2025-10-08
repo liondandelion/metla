@@ -173,10 +173,6 @@ textarea {
 
     overflow-x: hidden;
     overflow-y: auto;
-
-    p {
-        margin: 10px;
-    }
 }
 
 .sidebar-controls {
@@ -194,9 +190,10 @@ textarea {
     overflow-y: auto;
 }
 
-.event-card {
+.event-card-small {
     padding: 10px;
     box-shadow: 2px 2px 4px 0 rgb(0, 0, 0);
+    overflow: hidden;
 
     h1 {
         font-size: 1.5em;
@@ -209,20 +206,21 @@ textarea {
 
     h1, h2 {
         margin: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 
     p {
-        overflow: hidden;
-        text-overflow: ellipsis;
         margin: 0;
     }
 }
 
-.event-card:hover {
+.event-card-small:hover {
     background-color: rgba(0, 0, 0, 0.1);
 }
 
-.event-card:active {
+.event-card-small:active {
     box-shadow: 2px 2px 4px 0 inset rgb(0, 0, 0);
 }
 

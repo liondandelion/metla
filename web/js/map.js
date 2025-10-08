@@ -57,6 +57,22 @@ function markerToGeoJSONString() {
     return JSON.stringify(geojson)
 }
 
+function stringJSONToMarkers(stringJSON) {
+    const geojson = JSON.parse(stringJSON)
+
+    // el.className = "marker";
+    // el.style.width = '30px';
+    // el.style.height = '30px';
+
+    geojson.features.forEach((feature) => {
+        // const el = document.createElement("div");
+        const marker = new maplibregl.Marker()
+            .setLngLat(feature.geometry.coordinates)
+            .addTo(map);
+        mapState.markersArray.push(marker)
+    });
+}
+
 var map = new maplibregl.Map({
     container: 'map', // container id
     //style: 'https://demotiles.maplibre.org/style.json', // style URL

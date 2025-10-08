@@ -499,7 +499,7 @@ func OTPDisable(db mdb.DB, ghGCM cipher.AEAD) http.Handler {
 	})
 }
 
-func EventGet(db mdb.DB) http.Handler {
+func EventPageGet(db mdb.DB) http.Handler {
 	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
 		queryParams := r.URL.Query()
 		data := db.UserSessionDataGet(r.Context())
@@ -507,7 +507,7 @@ func EventGet(db mdb.DB) http.Handler {
 		pageSize := 10
 		page, err := strconv.Atoi(queryParams.Get("page"))
 		if err != nil {
-			return &MetlaError{"EventGet", "failed to convert page param to int", err, http.StatusInternalServerError}
+			return &MetlaError{"EventPageGet", "failed to convert page param to int", err, http.StatusInternalServerError}
 		}
 
 		var events []mdb.Event
@@ -518,10 +518,58 @@ func EventGet(db mdb.DB) http.Handler {
 		}
 
 		if err != nil {
-			return &MetlaError{"EventGet", "failed to retrieve events", err, http.StatusInternalServerError}
+			return &MetlaError{"EventPageGet", "failed to retrieve events", err, http.StatusInternalServerError}
 		}
 
-		node := mc.EventCardList(events, page)
+		node := mc.EventCardSmallList(events, page)
+		if err := node.Render(w); err != nil {
+			return &MetlaError{"EventPageGet", "failed to render", err, http.StatusInternalServerError}
+		}
+
+		return nil
+	})
+}
+
+func EventSmallGet(db mdb.DB) http.Handler {
+	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
+		idString := chi.URLParam(r, "id")
+		author := chi.URLParam(r, "author")
+
+		id, err := strconv.ParseInt(idString, 10, 64)
+		if err != nil {
+			return &MetlaError{"EventSmallGet", "failed to convert id param to int", err, http.StatusInternalServerError}
+		}
+
+		event, err := db.EventGet(mdb.EventLink{ID: id, Author: author})
+		if err != nil {
+			return &MetlaError{"EventSmallGet", "failed to retrieve event from db", err, http.StatusInternalServerError}
+		}
+
+		node := mc.EventCardSmall(event)
+		if err := node.Render(w); err != nil {
+			return &MetlaError{"EventSmallGet", "failed to render", err, http.StatusInternalServerError}
+		}
+
+		return nil
+	})
+}
+
+func EventGet(db mdb.DB) http.Handler {
+	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
+		idString := chi.URLParam(r, "id")
+		author := chi.URLParam(r, "author")
+
+		id, err := strconv.ParseInt(idString, 10, 64)
+		if err != nil {
+			return &MetlaError{"EventGet", "failed to convert id param to int", err, http.StatusInternalServerError}
+		}
+
+		event, err := db.EventGet(mdb.EventLink{ID: id, Author: author})
+		if err != nil {
+			return &MetlaError{"EventGet", "failed to retrieve event from db", err, http.StatusInternalServerError}
+		}
+
+		node := mc.EventCard(event)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventGet", "failed to render", err, http.StatusInternalServerError}
 		}
@@ -570,12 +618,12 @@ func EventNewPost(db mdb.DB) http.Handler {
 			Links:       nil,
 		}
 
-		err := db.EventInsert(event)
+		err := db.EventInsert(&event)
 		if err != nil {
 			return &MetlaError{"EventNewPost", "failed to insert event into the db", err, http.StatusInternalServerError}
 		}
 
-		node := mc.EventCard(event)
+		node := mc.EventCardSmall(event)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventNewPost", "failed to render", err, http.StatusInternalServerError}
 		}
