@@ -63,14 +63,14 @@ func Error(id, message string) g.Node {
 
 func FormOTP(postTo string) g.Node {
 	return g.Group{
-		gh.Form(gh.ID("otpForm"),
+		gh.Form(gh.ID("otpForm"), ghtmx.Post(postTo), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML"),
 			gh.Label(gh.For("otpCode"), g.Text("OTP code: ")),
 			gh.Input(gh.Type("text"), gh.Name("otpCode"), gh.ID("otpCode"), gh.Required(), gh.AutoFocus(),
 				Hyperscript(`
 					on load put '' into me
 				`),
 			),
-			gh.Button(ghtmx.Post(postTo), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML"),
+			gh.Button(gh.Type("submit"),
 				Hyperscript(`
 					on click wait 100ms then set value of #otpCode to ''
 				`),

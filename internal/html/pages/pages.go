@@ -110,14 +110,14 @@ func Register(userSession mdb.UserSessionData) g.Node {
 	return page(
 		PageProperties{Title: "Register"},
 		userSession,
-		gh.Form(gh.ID("registerForm"),
+		gh.Form(gh.ID("registerForm"), ghtmx.Post("/register"), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML"),
 			gh.Label(gh.For("username"), g.Text("Enter your username: ")),
 			gh.Input(gh.Type("text"), gh.Name("username"), gh.Required()),
 			gh.Label(gh.For("password"), g.Text("Enter your password: ")),
 			gh.Input(gh.Type("password"), gh.Name("password"), gh.Required()),
 			gh.Label(gh.For("confirm"), g.Text("Confirm password: ")),
 			gh.Input(gh.Type("password"), gh.Name("confirm"), gh.Required()),
-			gh.Button(ghtmx.Post("/register"), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML"), g.Text("Register")),
+			gh.Button(gh.Type("submit"), g.Text("Register")),
 			gh.Div(gh.ID("serverResponse")),
 		),
 	)
@@ -127,7 +127,7 @@ func Login(userSession mdb.UserSessionData) g.Node {
 	return page(
 		PageProperties{Title: "Login"},
 		userSession,
-		gh.Form(gh.ID("loginForm"),
+		gh.Form(gh.ID("loginForm"), ghtmx.Post("/login"), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML"),
 			mc.Hyperscript(`
 				on htmx:afterRequest
 					if #otpForm is not empty remove me
@@ -136,7 +136,7 @@ func Login(userSession mdb.UserSessionData) g.Node {
 			gh.Input(gh.Type("text"), gh.Name("username"), gh.Required()),
 			gh.Label(gh.For("passowrd"), g.Text("Enter your password: ")),
 			gh.Input(gh.Type("password"), gh.Name("password"), gh.Required()),
-			gh.Button(ghtmx.Post("/login"), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML"), g.Text("Login")),
+			gh.Button(gh.Type("submit"), g.Text("Login")),
 			gh.Div(gh.ID("serverResponse")),
 		),
 	)
@@ -174,7 +174,7 @@ func PasswordChange(userSession mdb.UserSessionData) g.Node {
 	return page(
 		PageProperties{Title: "Change password"},
 		userSession,
-		gh.Form(gh.ID("passwordChangeForm"),
+		gh.Form(gh.ID("passwordChangeForm"), ghtmx.Post("/user/password"), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML"),
 			mc.Hyperscript(`
 				on htmx:afterRequest
 					if #otpForm is not empty remove me
@@ -185,7 +185,7 @@ func PasswordChange(userSession mdb.UserSessionData) g.Node {
 			gh.Input(gh.Type("password"), gh.Name("newPassword"), gh.Required()),
 			gh.Label(gh.For("confirm"), g.Text("Confirm new password: ")),
 			gh.Input(gh.Type("password"), gh.Name("confirm"), gh.Required()),
-			gh.Button(ghtmx.Post("/user/password"), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML"), g.Text("Change")),
+			gh.Button(gh.Type("submit"), g.Text("Change")),
 			gh.Div(gh.ID("serverResponse")),
 		),
 	)
