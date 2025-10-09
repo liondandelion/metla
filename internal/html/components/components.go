@@ -101,7 +101,7 @@ func Sidebar(isAuthenticated bool) g.Node {
 }
 
 func Error(id, message string) g.Node {
-	return gh.Div(gh.ID(id), g.Text(message))
+	return gh.Div(gh.Class("server-response"), gh.ID(id), g.Text(message))
 }
 
 func FormOTP(postTo string) g.Node {
@@ -241,7 +241,7 @@ func EventNew() g.Node {
 func EventNewError(id, message string) g.Node {
 	return g.Group{
 		AnchorEventNew(),
-		gh.Div(gh.ID(id), ghtmx.SwapOOB("outerHTML"), g.Text(message)),
+		gh.Div(gh.Class("server-response"), gh.ID(id), ghtmx.SwapOOB("outerHTML"), g.Text(message)),
 	}
 }
 

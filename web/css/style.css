@@ -47,6 +47,7 @@ form {
     align-self: center;
     margin: 0 auto;
     gap: 10px;
+    max-width: 200px;
 
     label {
         margin-bottom: -8px;
@@ -86,7 +87,8 @@ button:hover,
 
 button:active,
 .button-like:active {
-    box-shadow: 4px 4px 0 0 inset var(--color-shadow);
+    box-shadow: 0 0 0 0 var(--color-shadow);
+    transition: box-shadow 25ms;
 }
 
 textarea {
@@ -171,10 +173,11 @@ textarea {
     grid-row: 1 / span 1;
     gap: 10px;
     padding: 5px;
-    box-shadow: 4px 4px 4px 0 var(--color-shadow);
+    box-shadow: 0 4px 4px 0 var(--color-shadow);
 
     form {
         margin: 0;
+        max-width: inherit;
     }
 }
 
@@ -188,7 +191,7 @@ textarea {
 
 .event-card-small {
     padding: 10px;
-    box-shadow: 4px 4px 4px 0 var(--color-shadow);
+    box-shadow: 0 4px 4px 0 var(--color-shadow);
     overflow: hidden;
 
     h1 {
@@ -217,12 +220,12 @@ textarea {
 }
 
 .event-card-small:active {
-    box-shadow: 4px 4px 4px 0 inset var(--color-shadow);
+    box-shadow: 0 4px 4px 0 inset var(--color-shadow);
 }
 
 .event-card {
     padding: 10px;
-    box-shadow: 2px 2px 4px 0 inset var(--color-shadow);
+    box-shadow: 0 4px 4px 0 inset var(--color-shadow);
     background-color: rgba(0, 0, 0, 0.1);
 
     h1 {
@@ -260,4 +263,13 @@ textarea {
         padding: 0;
         gap: 24px;
     }
+}
+
+.server-response {
+    align-self: center;
+    justify-self: center;
+    background-color: lavenderblush;
+    border: 2px solid var(--color-border);
+    padding: 4px;
+    text-align: center;
 }
