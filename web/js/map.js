@@ -48,7 +48,6 @@ function markerToGeoJSON() {
             },
         }))
     };
-    console.log(JSON.stringify(geojson, null, 2));
     return geojson;
 }
 
@@ -143,7 +142,6 @@ map.on("click", (e) => {
             mapState.markerFollowsMouse.remove()
             mapState.markerFollowsMouse = null;
         }
-        console.log(`Marker placed at: ${lngLat.lng}, ${lngLat.lat}`);
     }
 });
 
