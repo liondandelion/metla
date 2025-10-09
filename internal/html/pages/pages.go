@@ -107,16 +107,16 @@ func User(userSession mdb.UserSessionData) g.Node {
 				g.If(userSession.IsAuthenticated,
 					g.Group{
 						gh.Li(
-							gh.A(gh.Href("/user/password"), g.Text("Change password")),
+							gh.A(gh.Class("button-like"), gh.Href("/user/password"), g.Text("Change password")),
 						),
 						g.If(userSession.IsOTPEnabled,
 							gh.Li(
-								gh.A(gh.Href("/user/otp/disable"), g.Text("Disable OTP")),
+								gh.A(gh.Class("button-like"), gh.Href("/user/otp/disable"), g.Text("Disable OTP")),
 							),
 						),
 						g.If(!userSession.IsOTPEnabled,
 							gh.Li(
-								gh.A(gh.Href("/user/otp/enable"), g.Text("Enable OTP")),
+								gh.A(gh.Class("button-like"), gh.Href("/user/otp/enable"), g.Text("Enable OTP")),
 							),
 						),
 					},

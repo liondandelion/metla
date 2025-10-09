@@ -607,22 +607,22 @@ func EventNewPost(db mdb.DB) http.Handler {
 			return nil
 		}
 
-		var tStart, tEnd *time.Time
+		var tStart, tEnd time.Time
 		if datetimeStart != "" {
 			layout := "2006-01-02T15:04"
 			var err error
-			*tStart, err = time.Parse(layout, datetimeStart)
+			tStart, err = time.Parse(layout, datetimeStart)
 			if err != nil {
 				return &MetlaError{"EventNewPost", "failed to convert time", err, http.StatusInternalServerError}
 			}
-			*tEnd, err = time.Parse(layout, datetimeEnd)
+			tEnd, err = time.Parse(layout, datetimeEnd)
 			if err != nil {
 				return &MetlaError{"EventNewPost", "failed to convert time", err, http.StatusInternalServerError}
 			}
-			*tStart = tStart.UTC()
-			*tEnd = tEnd.UTC()
+			tStart = tStart.UTC()
+			tEnd = tEnd.UTC()
 
-			if tEnd.Before(*tStart) {
+			if tEnd.Before(tStart) {
 				node := mc.EventNewError("serverResponse", "End time should be before start time")
 				if err := node.Render(w); err != nil {
 					return &MetlaError{"EventNewPost", "failed to render", err, http.StatusInternalServerError}
@@ -636,8 +636,13 @@ func EventNewPost(db mdb.DB) http.Handler {
 			Title:         title,
 			Description:   description,
 			GeoJSON:       geojson,
-			DatetimeStart: tStart,
-			DatetimeEnd:   tEnd,
+			DatetimeStart: &tStart,
+			DatetimeEnd:   &tEnd,
+		}
+
+		if event.DatetimeStart.Equal(time.Time{}) {
+			event.DatetimeStart = nil
+			event.DatetimeEnd = nil
 		}
 
 		err := db.EventInsert(&event)

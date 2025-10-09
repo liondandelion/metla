@@ -42,9 +42,10 @@ form {
     display: grid;
     align-self: center;
     margin: 0 auto;
+    gap: 10px;
 
-    input {
-        margin-bottom: 10px;
+    label {
+        margin-bottom: -8px;
     }
 }
 
@@ -58,21 +59,29 @@ a {
     color: black;
 }
 
-button {
+li {
+    list-style: none;
+    text-align: center;
+}
+
+button:not(.maplibregl-ctrl-zoom-in, .maplibregl-ctrl-zoom-out),
+.button-like {
     border: solid;
     border-width: 2px;
     border-radius: 0;
     border-color: black;
     box-shadow: 2px 2px 0 0 rgb(0, 0, 0);
     background-color: var(--color-btn);
-
+    padding: 5px;
 }
 
-button:hover {
+button:hover,
+.button-like:hover {
     background-color: var(--color-btn-hover);
 }
 
-button:active {
+button:active,
+.button-like:active {
     box-shadow: 2px 2px 0 0 inset rgb(0, 0, 0);
 }
 
@@ -80,50 +89,26 @@ textarea {
     resize: vertical;
 }
 
-.button-like {
-    border: solid;
-    border-width: 2px;
-    box-shadow: 2px 2px 0 0 rgb(0, 0, 0);
-    padding: 5px;
-    background-color: var(--color-btn);
-}
-
-.button-like:hover {
-    background-color: var(--color-btn-hover);
-}
-
-.button-like:active {
-    box-shadow: 2px 2px 0 0 inset rgb(0, 0, 0);
-}
-
 .navbar {
     display: grid;
-    align-self: stretch;
     grid-template-columns: 1fr min-content;
-
-    background-color: white;
-    padding: 0;
 }
 
 .navbar-left-side {
     display: grid;
     align-items: center;
-    margin: 0 auto 0 0;
+    margin: 0 auto 0 10px;
     padding: 0;
+    gap: 10px;
 }
 
 .navbar-right-side {
     display: grid;
     grid-auto-flow: column;
     align-items: center;
-    margin: 0 0 0 auto;
+    margin: 0 10px 0 auto;
     padding: 0;
-}
-
-.navbar-item {
-    list-style: none;
-    text-align: center;
-    padding: 0 15px;
+    gap: 10px;
 }
 
 .otp-enable {
@@ -179,6 +164,7 @@ textarea {
     display: grid;
     grid-auto-rows: min-content;
     grid-row: 1 / span 1;
+    gap: 10px;
     padding: 5px;
 }
 
@@ -224,6 +210,29 @@ textarea {
     box-shadow: 2px 2px 4px 0 inset rgb(0, 0, 0);
 }
 
+.event-card {
+    padding: 10px;
+    box-shadow: 2px 2px 4px 0 inset rgb(0, 0, 0);
+    background-color: rgba(0, 0, 0, 0.1);
+
+    h1 {
+        font-size: 1.5em;
+    }
+
+    h2 {
+        font-size: 1em;
+        font-weight: normal;
+    }
+
+    h1, h2 {
+        margin: 0;
+    }
+
+    p {
+        margin: 0;
+    }
+}
+
 .time {
     font-size: 0.5em;
 }
@@ -234,6 +243,11 @@ textarea {
 
 .user-profile {
     display: grid;
-    align-self: center;
-    margin: 0 auto;
+    grid-auto-rows: min-content;
+
+    ul {
+        display: grid;
+        padding: 0;
+        gap: 24px;
+    }
 }

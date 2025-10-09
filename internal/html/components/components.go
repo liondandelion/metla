@@ -22,32 +22,32 @@ func Navbar(username string, isAuthenticated, isAdmin bool) g.Node {
 	return gh.Header(
 		gh.Nav(gh.Class("navbar"),
 			gh.Ul(gh.Class("navbar-left-side"),
-				gh.Li(gh.Class("navbar-item"),
+				gh.Li(
 					gh.A(gh.Class("button-like"), gh.Href("/"), g.Text("Metla")),
 				),
 			),
 			gh.Ul(gh.Class("navbar-right-side"),
 				g.If(isAuthenticated,
 					g.Group{
-						gh.Li(gh.Class("navbar-item"),
+						gh.Li(
 							gh.A(gh.Class("button-like"), gh.Href("/user"), g.Text(username)),
 						),
 						g.If(isAdmin,
-							gh.Li(gh.Class("navbar-item"),
+							gh.Li(
 								gh.A(gh.Class("button-like"), gh.Href("/userstable"), g.Text("Users")),
 							),
 						),
-						gh.Li(gh.Class("navbar-item"),
+						gh.Li(
 							gh.A(gh.Class("button-like"), gh.Href("/logout"), g.Text("Logout")),
 						),
 					},
 				),
 				g.If(!isAuthenticated,
 					g.Group{
-						gh.Li(gh.Class("navbar-item"),
+						gh.Li(
 							gh.A(gh.Class("button-like"), gh.Href("/register"), g.Text("Register")),
 						),
-						gh.Li(gh.Class("navbar-item"),
+						gh.Li(
 							gh.A(gh.Class("button-like"), gh.Href("/login"), g.Text("Login")),
 						),
 					},
@@ -62,7 +62,7 @@ func Sidebar(isAuthenticated bool) g.Node {
 
 	if !isAuthenticated {
 		sidebar = gh.Aside(gh.ID("sidebar"), gh.Class("sidebar"),
-			gh.P(gh.Style("line-height: 2em;"),
+			gh.P(gh.Style("line-height: 2em; text-align: center;"),
 				g.Text("There is nothing to show here yet. Please "),
 				gh.A(gh.Class("button-like"), gh.Href("/register"), g.Text("register")),
 				g.Text(" or "),
@@ -211,9 +211,9 @@ func EventNew() g.Node {
 		gh.Input(gh.Type("text"), gh.Name("title"), gh.ID("title"), gh.Required()),
 		gh.Label(gh.For("description"), g.Text("Description: ")),
 		gh.Textarea(gh.Name("description"), gh.ID("description"), gh.Cols("35"), gh.Required()),
-		gh.Label(gh.For("datetimeStart"), g.Text("Date and time start (optional): ")),
+		gh.Label(gh.For("datetimeStart"), g.Text("Starting at (optional): ")),
 		gh.Input(gh.Type("datetime-local"), gh.Name("datetimeStart"), gh.ID("datetimeStart")),
-		gh.Label(gh.For("datetimeEnd"), g.Text("Date and time end (optional): ")),
+		gh.Label(gh.For("datetimeEnd"), g.Text("Ending at (optional): ")),
 		gh.Input(gh.Type("datetime-local"), gh.Name("datetimeEnd"), gh.ID("datetimeEnd")),
 		gh.Input(gh.Type("hidden"), gh.Name("geojson"), gh.ID("geojson")),
 		gh.Button(gh.Type("button"),
