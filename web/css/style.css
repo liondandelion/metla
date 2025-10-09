@@ -166,6 +166,10 @@ textarea {
     grid-row: 1 / span 1;
     gap: 10px;
     padding: 5px;
+
+    form {
+        margin: 0;
+    }
 }
 
 .sidebar-content {
