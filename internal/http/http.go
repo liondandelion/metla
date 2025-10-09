@@ -540,7 +540,7 @@ func EventSmallGet(db mdb.DB) http.Handler {
 			return &MetlaError{"EventSmallGet", "failed to convert id param to int", err, http.StatusInternalServerError}
 		}
 
-		event, err := db.EventGet(mdb.EventLink{ID: id, Author: author})
+		event, err := db.EventGet(id, author)
 		if err != nil {
 			return &MetlaError{"EventSmallGet", "failed to retrieve event from db", err, http.StatusInternalServerError}
 		}
@@ -564,7 +564,7 @@ func EventGet(db mdb.DB) http.Handler {
 			return &MetlaError{"EventGet", "failed to convert id param to int", err, http.StatusInternalServerError}
 		}
 
-		event, err := db.EventGet(mdb.EventLink{ID: id, Author: author})
+		event, err := db.EventGet(id, author)
 		if err != nil {
 			return &MetlaError{"EventGet", "failed to retrieve event from db", err, http.StatusInternalServerError}
 		}
@@ -594,28 +594,50 @@ func EventNewPost(db mdb.DB) http.Handler {
 		r.ParseForm()
 		title := r.PostFormValue("title")
 		description := r.PostFormValue("description")
-		datetime := r.PostFormValue("datetime")
+		datetimeStart := r.PostFormValue("datetimeStart")
+		datetimeEnd := r.PostFormValue("datetimeEnd")
 		geojson := r.PostFormValue("geojson")
 		data := db.UserSessionDataGet(r.Context())
 
-		var t time.Time
-		if datetime != "" {
+		if (datetimeStart == "" && datetimeEnd != "") || (datetimeEnd == "" && datetimeStart != "") {
+			node := mc.EventNewError("serverResponse", "Either specify both times or neither")
+			if err := node.Render(w); err != nil {
+				return &MetlaError{"EventNewPost", "failed to render", err, http.StatusInternalServerError}
+			}
+			return nil
+		}
+
+		var tStart, tEnd *time.Time
+		if datetimeStart != "" {
 			layout := "2006-01-02T15:04"
 			var err error
-			t, err = time.Parse(layout, datetime)
+			*tStart, err = time.Parse(layout, datetimeStart)
 			if err != nil {
 				return &MetlaError{"EventNewPost", "failed to convert time", err, http.StatusInternalServerError}
 			}
-			t = t.UTC()
+			*tEnd, err = time.Parse(layout, datetimeEnd)
+			if err != nil {
+				return &MetlaError{"EventNewPost", "failed to convert time", err, http.StatusInternalServerError}
+			}
+			*tStart = tStart.UTC()
+			*tEnd = tEnd.UTC()
+
+			if tEnd.Before(*tStart) {
+				node := mc.EventNewError("serverResponse", "End time should be before start time")
+				if err := node.Render(w); err != nil {
+					return &MetlaError{"EventNewPost", "failed to render", err, http.StatusInternalServerError}
+				}
+				return nil
+			}
 		}
 
 		event := mdb.Event{
-			Author:      data.Username,
-			Title:       title,
-			Description: description,
-			GeoJSON:     geojson,
-			Date:        t,
-			Links:       nil,
+			Author:        data.Username,
+			Title:         title,
+			Description:   description,
+			GeoJSON:       geojson,
+			DatetimeStart: tStart,
+			DatetimeEnd:   tEnd,
 		}
 
 		err := db.EventInsert(&event)

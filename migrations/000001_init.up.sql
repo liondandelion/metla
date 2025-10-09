@@ -21,12 +21,6 @@ create table if not exists otp
     foreign key (username) references users on delete cascade
 );
 
-create type event_link as
-(
-    id bigint,
-    author text
-);
-
 create table if not exists events
 (
     id bigint,
@@ -34,8 +28,8 @@ create table if not exists events
     title text not null,
     description text not null,
     geojson jsonb not null,
-    date timestamp with time zone null,
-    links event_link[] null,
+    datetime_start timestamptz null,
+    datetime_end timestamptz null,
     primary key (id, author)
 );
 
@@ -56,3 +50,19 @@ $$ language plpgsql;
 create or replace trigger events_trigger_gen_new_id
 before insert on events
 for each row execute function events_gen_new_id();
+
+create table if not exists followers
+(
+    followee text references users on delete cascade,
+    follower text references users on delete cascade
+);
+
+create table if not exists event_links
+(
+    id_from bigint,
+    author_from text,
+    id_to bigint,
+    author_to text,
+    foreign key (id_from, author_from) references events on delete cascade,
+    foreign key (id_to, author_to) references events on delete cascade
+);
