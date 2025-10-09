@@ -1,6 +1,8 @@
 :root {
     --color-btn: lavender;
     --color-btn-hover: lightsteelblue;
+    --color-border: dimgray;
+    --color-shadow: black;
 }
 
 html {
@@ -23,6 +25,7 @@ header {
 
     border-style: solid;
     border-width: 2px;
+    border-color: var(--color-border);
 }
 
 main {
@@ -36,6 +39,7 @@ main {
 
     border-style: none solid solid solid;
     border-width: 2px;
+    border-color: var(--color-border);
 }
 
 form {
@@ -69,8 +73,8 @@ button:not(.maplibregl-ctrl-zoom-in, .maplibregl-ctrl-zoom-out),
     border: solid;
     border-width: 2px;
     border-radius: 0;
-    border-color: black;
-    box-shadow: 2px 2px 0 0 rgb(0, 0, 0);
+    border-color: var(--color-border);
+    box-shadow: 4px 4px 0 0 var(--color-shadow);
     background-color: var(--color-btn);
     padding: 5px;
 }
@@ -82,7 +86,7 @@ button:hover,
 
 button:active,
 .button-like:active {
-    box-shadow: 2px 2px 0 0 inset rgb(0, 0, 0);
+    box-shadow: 4px 4px 0 0 inset var(--color-shadow);
 }
 
 textarea {
@@ -155,6 +159,7 @@ textarea {
 
     border-style: none solid none none;
     border-width: 2px;
+    border-color: var(--color-border);
 
     overflow-x: hidden;
     overflow-y: auto;
@@ -166,6 +171,7 @@ textarea {
     grid-row: 1 / span 1;
     gap: 10px;
     padding: 5px;
+    box-shadow: 4px 4px 4px 0 var(--color-shadow);
 
     form {
         margin: 0;
@@ -182,7 +188,7 @@ textarea {
 
 .event-card-small {
     padding: 10px;
-    box-shadow: 2px 2px 4px 0 rgb(0, 0, 0);
+    box-shadow: 4px 4px 4px 0 var(--color-shadow);
     overflow: hidden;
 
     h1 {
@@ -207,16 +213,16 @@ textarea {
 }
 
 .event-card-small:hover {
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: rgba(230, 230, 250, 0.5);
 }
 
 .event-card-small:active {
-    box-shadow: 2px 2px 4px 0 inset rgb(0, 0, 0);
+    box-shadow: 4px 4px 4px 0 inset var(--color-shadow);
 }
 
 .event-card {
     padding: 10px;
-    box-shadow: 2px 2px 4px 0 inset rgb(0, 0, 0);
+    box-shadow: 2px 2px 4px 0 inset var(--color-shadow);
     background-color: rgba(0, 0, 0, 0.1);
 
     h1 {
