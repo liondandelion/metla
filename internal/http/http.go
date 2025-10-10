@@ -535,8 +535,15 @@ func EventPageGet(db mdb.DB) http.Handler {
 
 func EventLinksPageGet(db mdb.DB) http.Handler {
 	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
+		idString := chi.URLParam(r, "id")
+		author := chi.URLParam(r, "author")
 		queryParams := r.URL.Query()
-		data := db.UserSessionDataGet(r.Context())
+		// data := db.UserSessionDataGet(r.Context())
+
+		id, err := strconv.ParseInt(idString, 10, 64)
+		if err != nil {
+			return &MetlaError{"EventLinksPageGet", "failed to convert id param to int", err, http.StatusInternalServerError}
+		}
 
 		var params mc.EventCardParams
 		params.IsSmall = r.URL.Query().Has("small")
@@ -544,23 +551,23 @@ func EventLinksPageGet(db mdb.DB) http.Handler {
 		pageSize := 10
 		page, err := strconv.Atoi(queryParams.Get("page"))
 		if err != nil {
-			return &MetlaError{"EventPageGet", "failed to convert page param to int", err, http.StatusInternalServerError}
+			return &MetlaError{"EventLinksPageGet", "failed to convert page param to int", err, http.StatusInternalServerError}
 		}
 
 		var events []mdb.Event
 		if !queryParams.Has("page") {
-			events, err = db.UserEventGetAll(data.Username)
+			events, err = db.EventLinksGetAll(mdb.EventID{ID: id, Author: author})
 		} else {
-			events, err = db.UserEventGetPageStartingFrom(data.Username, pageSize, page*pageSize)
+			events, err = db.EventLinksGetPageStartingFrom(mdb.EventID{ID: id, Author: author}, pageSize, page*pageSize)
 		}
 
 		if err != nil {
-			return &MetlaError{"EventPageGet", "failed to retrieve events", err, http.StatusInternalServerError}
+			return &MetlaError{"EventLinksPageGet", "failed to retrieve events", err, http.StatusInternalServerError}
 		}
 
-		node := mc.EventCardList(events, page, params)
+		node := mc.EventCardLinksList(events, page, params)
 		if err := node.Render(w); err != nil {
-			return &MetlaError{"EventPageGet", "failed to render", err, http.StatusInternalServerError}
+			return &MetlaError{"EventLinksPageGet", "failed to render", err, http.StatusInternalServerError}
 		}
 
 		return nil

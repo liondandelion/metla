@@ -134,7 +134,7 @@ func Sidebar(isAuthenticated bool) g.Node {
 }
 
 func EventCard(e mdb.Event, params EventCardParams) g.Node {
-	var class, htmx, title, author, description, time, hyperscript, geojson, btnLink, eventLinkList g.Node
+	var class, htmx, title, author, description, time, hyperscript, geojson, btnLinkThis, btnLinksSee g.Node
 
 	if e.DatetimeStart == nil {
 		time = nil
@@ -169,9 +169,14 @@ func EventCard(e mdb.Event, params EventCardParams) g.Node {
 		`)
 		description = nil
 		geojson = nil
-		btnLink = nil
+		btnLinkThis = nil
+		btnLinksSee = nil
 	} else {
-		eventLinkList = EventLinkList(e)
+		btnLinksSee = gh.Button(
+			ghtmx.Get(fmt.Sprintf("/user/event/%v-%v/links?page=%v&small", e.Author, e.ID, 0)),
+			ghtmx.Target("#sidebarContent"), ghtmx.Swap("innerHTML"),
+			g.Text("See links"),
+		)
 		getFrom += "?small"
 
 		class = gh.Class("event-card")
@@ -189,7 +194,7 @@ func EventCard(e mdb.Event, params EventCardParams) g.Node {
 		description = gh.P(g.Text(e.Description))
 		geojson = gh.Div(gh.ID(divID), g.Attr("data-geojson", e.GeoJSON))
 
-		btnLink = gh.Button(gh.Class("hidden"),
+		btnLinkThis = gh.Button(gh.Class("hidden"),
 			Hyperscript(`
 				init
 					get the closest <div/>
@@ -207,7 +212,7 @@ func EventCard(e mdb.Event, params EventCardParams) g.Node {
 		)
 	}
 
-	return gh.Article(class, htmx, hyperscript, title, author, time, description, geojson, btnLink, eventLinkList)
+	return gh.Article(gh.ID(eventID), class, htmx, hyperscript, title, author, time, description, geojson, btnLinkThis, btnLinksSee)
 }
 
 func EventCardList(events []mdb.Event, page int, params EventCardParams) g.Node {
@@ -222,6 +227,21 @@ func EventCardList(events []mdb.Event, page int, params EventCardParams) g.Node 
 	return g.Group{
 		g.Map(events, f),
 		AnchorEventLoadMore(page + 1),
+	}
+}
+
+func EventCardLinksList(events []mdb.Event, page int, params EventCardParams) g.Node {
+	if len(events) == 0 {
+		return g.Raw("")
+	}
+
+	f := func(e mdb.Event) g.Node {
+		return EventCard(e, params)
+	}
+
+	return g.Group{
+		g.Map(events, f),
+		AnchorEventLinkLoadMore(events[0], page+1),
 	}
 }
 
@@ -299,17 +319,7 @@ func AnchorEventNew() g.Node {
 }
 
 func AnchorEventLinkLoadMore(e mdb.Event, nextPage int) g.Node {
-	return gh.Article(ghtmx.Get(fmt.Sprintf("/user/event/{%v}-{%v}/links?page=%v&small", e.Author, e.ID, nextPage)),
+	return gh.Article(ghtmx.Get(fmt.Sprintf("/user/event/%v-%v/links?page=%v&small", e.Author, e.ID, nextPage)),
 		ghtmx.Trigger("intersect once"), ghtmx.Swap("afterend"),
-	)
-}
-
-func EventLinkList(e mdb.Event) g.Node {
-	return gh.Details(gh.ID("eventLinksList"), gh.Class("event-links-list"),
-		Hyperscript(`
-			on click halt the event's bubbling
-		`),
-		gh.Summary(g.Text("Links to other events")),
-		AnchorEventLinkLoadMore(e, 0),
 	)
 }

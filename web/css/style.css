@@ -205,7 +205,7 @@ textarea {
 .event-card-small,
 .event-card {
     display: grid;
-    gap: 4px;
+    gap: 10px;
     padding: 10px;
 
     h1 {

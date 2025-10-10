@@ -215,26 +215,44 @@ func (db DB) EventLinkInsert(from, to EventID) error {
 	return err
 }
 
-func (db DB) EventLinksGetAll(from EventID) ([]EventID, error) {
+func (db DB) EventLinksGetAll(from EventID) ([]Event, error) {
 	rows, err := db.pool.Query(context.Background(),
-		"select (id_to, author_to) from event_links where id_from = $1 and author_from = $2",
+		`
+		select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end
+		from events e
+		where (id, author) in (
+			select id, author
+			from event_links l
+			where l.id_from = $1 and l.author_from = $2
+		)
+		order by datetime_start
+		`,
 		from.ID, from.Author,
 	)
 	if err != nil {
 		return nil, err
 	}
-	e, err := pgx.CollectRows(rows, pgx.RowToStructByName[EventID])
+	e, err := pgx.CollectRows(rows, pgx.RowToStructByName[Event])
 	return e, err
 }
 
-// func (db DB) EventLinksGetPageStartingFrom(from EventID, pageSize, offset int) ([]Event, error) {
-// 	rows, err := db.pool.Query(context.Background(),
-// 		"select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end from events where author = $1 order by datetime_start limit $2 offset $3",
-// 		username, pageSize, offset,
-// 	)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	e, err := pgx.CollectRows(rows, pgx.RowToStructByName[Event])
-// 	return e, err
-// }
+func (db DB) EventLinksGetPageStartingFrom(from EventID, pageSize, offset int) ([]Event, error) {
+	rows, err := db.pool.Query(context.Background(),
+		`
+		select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end
+		from events e
+		where (id, author) in (
+			select id_to, author_to
+			from event_links l
+			where id_from = $1 and author_from = $2
+		)
+		order by datetime_start limit $3 offset $4
+		`,
+		from.ID, from.Author, pageSize, offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	e, err := pgx.CollectRows(rows, pgx.RowToStructByName[Event])
+	return e, err
+}
