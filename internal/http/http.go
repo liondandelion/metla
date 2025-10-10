@@ -608,7 +608,7 @@ func EventNewPost(db mdb.DB) http.Handler {
 			tEnd = tEnd.UTC()
 
 			if tEnd.Before(tStart) {
-				node := mc.EventNewError("serverResponse", "End time should be before start time")
+				node := mc.EventNewError("serverResponse", "End time should be after start time")
 				if err := node.Render(w); err != nil {
 					return &MetlaError{"EventNewPost", "failed to render", err, http.StatusInternalServerError}
 				}
