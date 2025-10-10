@@ -81,7 +81,6 @@ func Sidebar(isAuthenticated bool) g.Node {
 					Hyperscript(`
 						on click
 							if my innerHTML equals "Add event"
-								send cardCollapse to .event-card
 								set my innerHTML to "Close event"
 								trigger fetchEvent
 							else if my innerHTML equals "Close event" then send formEventNewClose to #sidebar-controls
@@ -154,7 +153,7 @@ func EventCard(e mdb.Event, isSmall bool) g.Node {
 			ghtmx.Get(fmt.Sprintf("/user/event/%v-%v", e.Author, e.ID)), ghtmx.Trigger("click"), ghtmx.Swap("outerHTML"),
 		}
 		hyperscript = Hyperscript(`
-			on click call markerRemoveAll() then send cardCollapse to .event-card then send formEventNewClose to #sidebar-controls
+			on click send cardCollapse to .event-card then call markersFromNewHide()
 		`)
 		description = nil
 		geojson = nil
@@ -164,9 +163,12 @@ func EventCard(e mdb.Event, isSmall bool) g.Node {
 			ghtmx.Get(fmt.Sprintf("/user/event/%v-%v?small", e.Author, e.ID)), ghtmx.Trigger("htmxCardCollapse"), ghtmx.Swap("outerHTML"),
 		}
 		hyperscript = Hyperscript(`
-			on load call stringJSONToMarkers(` + `@data-geojson of #` + divID + `)
+			on load call geoJSONStringToEventMarkers(` + `@data-geojson of #` + divID + `)
 			on click send cardCollapse to .event-card
-			on cardCollapse or click call markerRemoveAll() then trigger htmxCardCollapse
+			on cardCollapse or click
+				call markersFromEventRemove()
+				call markersFromNewUnhide()
+				trigger htmxCardCollapse
 		`)
 		description = gh.P(g.Text(e.Description))
 		geojson = gh.Div(gh.ID(divID), g.Attr("data-geojson", e.GeoJSON))
@@ -200,7 +202,7 @@ func EventNew() g.Node {
 			on htmx:beforeSend set innerHTML of #serverResponse to ""
 			on htmx:afterRequest
 				if innerHTML of #serverResponse is ""
-					call markerRemoveAll() then send formEventNewClose to #sidebar-controls
+					call markersFromNewRemove() then send formEventNewClose to #sidebar-controls
 		`),
 		gh.Label(gh.For("title"), g.Text("Title: ")),
 		gh.Input(gh.Type("text"), gh.Name("title"), gh.ID("title"), gh.Required()),
@@ -213,19 +215,23 @@ func EventNew() g.Node {
 		gh.Input(gh.Type("hidden"), gh.Name("geojson"), gh.ID("geojson")),
 		gh.Button(gh.Type("button"),
 			Hyperscript(`
-				on click call markerPlace()
+				on click
+					call markerPlace()
+					send cardCollapse to .event-card
 			`),
 			g.Text("Add marker"),
 		),
 		gh.Button(gh.Type("button"),
 			Hyperscript(`
-				on click call markerRemove()
+				on click
+					call markerRemove()
+					send cardCollapse to .event-card
 			`),
 			g.Text("Remove marker"),
 		),
 		gh.Button(gh.Type("submit"),
 			Hyperscript(`
-				on click call markerToGeoJSONString() then put the result into @value of #geojson
+				on click call markersFromNewToGeoJSONString() then put the result into @value of #geojson
 			`),
 			g.Text("Send"),
 		),

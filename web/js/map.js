@@ -5,7 +5,8 @@ let mapState = {
     clickPlacesMarker: false,
     clickRemovesMarker: false,
     markerFollowsMouse: null,
-    markersArray: [],
+    markersFromNew: [],
+    markersFromEvent: [],
 };
 
 function markerPlace() {
@@ -18,11 +19,31 @@ function markerRemove() {
     mapState.clickPlacesMarker = false;
 }
 
-function markerRemoveAll() {
-    for (const marker of mapState.markersArray) {
+function markerRemoveAll(markers) {
+    for (const marker of markers) {
         marker.remove()
     }
-    mapState.markersArray = []
+    markers = []
+}
+
+function markersFromNewRemove() {
+    markerRemoveAll(mapState.markersFromNew)
+}
+
+function markersFromEventRemove() {
+    markerRemoveAll(mapState.markersFromEvent)
+}
+
+function markersFromNewHide() {
+    for (const marker of mapState.markersFromNew) {
+        marker.remove()
+    }
+}
+
+function markersFromNewUnhide() {
+    for (const marker of mapState.markersFromNew) {
+        marker.addTo(map)
+    }
 }
 
 function onMouseLeftMap() {
@@ -37,10 +58,10 @@ function onZoom(e) {
     document.getElementById("zoomNum").innerHTML = map.getZoom().toFixed(2);
 }
 
-function markerToGeoJSON() {
+function markersFromNewToGeoJSON() {
     const geojson = {
         type: "FeatureCollection",
-        features: mapState.markersArray.map(marker => ({
+        features: mapState.markersFromNew.map(marker => ({
             type: "Feature",
             geometry: {
                 type: "Point",
@@ -51,24 +72,19 @@ function markerToGeoJSON() {
     return geojson;
 }
 
-function markerToGeoJSONString() {
-    const geojson =  markerToGeoJSON()
+function markersFromNewToGeoJSONString() {
+    const geojson =  markersFromNewToGeoJSON()
     return JSON.stringify(geojson)
 }
 
-function stringJSONToMarkers(stringJSON) {
+function geoJSONStringToEventMarkers(stringJSON) {
     const geojson = JSON.parse(stringJSON)
 
-    // el.className = "marker";
-    // el.style.width = '30px';
-    // el.style.height = '30px';
-
     geojson.features.forEach((feature) => {
-        // const el = document.createElement("div");
         const marker = new maplibregl.Marker()
             .setLngLat(feature.geometry.coordinates)
             .addTo(map);
-        mapState.markersArray.push(marker)
+        mapState.markersFromEvent.push(marker)
     });
 }
 
@@ -129,13 +145,13 @@ map.on("click", (e) => {
 
         marker.getElement().addEventListener("click", () => {
             if (mapState.clickRemovesMarker) {
-                mapState.markersArray = mapState.markersArray.filter(m => m !== marker);
+                mapState.markersFromNew = mapState.markersFromNew.filter(m => m !== marker);
                 marker.remove();
                 mapState.clickRemovesMarker = false;
             }
         });
 
-        mapState.markersArray.push(marker);
+        mapState.markersFromNew.push(marker);
 
         mapState.clickPlacesMarker = false;
         if (mapState.markerFollowsMouse !== null) {
