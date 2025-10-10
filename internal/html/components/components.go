@@ -83,7 +83,9 @@ func Sidebar(isAuthenticated bool) g.Node {
 							if my innerHTML equals "Add event"
 								set my innerHTML to "Close event"
 								trigger fetchEvent
-							else if my innerHTML equals "Close event" then send formEventNewClose to #sidebar-controls
+							else if my innerHTML equals "Close event" then
+								send formEventNewClose to #sidebar-controls
+								call markersFromNewRemove()
 					`),
 					g.Text("Add event"),
 				),

@@ -21,28 +21,28 @@ function markerRemove() {
 
 function markerRemoveAll(markers) {
     for (const marker of markers) {
-        marker.remove()
+        marker.remove();
     }
-    markers = []
+    markers.length = 0;
 }
 
 function markersFromNewRemove() {
-    markerRemoveAll(mapState.markersFromNew)
+    markerRemoveAll(mapState.markersFromNew);
 }
 
 function markersFromEventRemove() {
-    markerRemoveAll(mapState.markersFromEvent)
+    markerRemoveAll(mapState.markersFromEvent);
 }
 
 function markersFromNewHide() {
     for (const marker of mapState.markersFromNew) {
-        marker.remove()
+        marker.remove();
     }
 }
 
 function markersFromNewUnhide() {
     for (const marker of mapState.markersFromNew) {
-        marker.addTo(map)
+        marker.addTo(map);
     }
 }
 
@@ -73,18 +73,18 @@ function markersFromNewToGeoJSON() {
 }
 
 function markersFromNewToGeoJSONString() {
-    const geojson =  markersFromNewToGeoJSON()
-    return JSON.stringify(geojson)
+    const geojson =  markersFromNewToGeoJSON();
+    return JSON.stringify(geojson);
 }
 
 function geoJSONStringToEventMarkers(stringJSON) {
-    const geojson = JSON.parse(stringJSON)
+    const geojson = JSON.parse(stringJSON);
 
     geojson.features.forEach((feature) => {
         const marker = new maplibregl.Marker()
             .setLngLat(feature.geometry.coordinates)
             .addTo(map);
-        mapState.markersFromEvent.push(marker)
+        mapState.markersFromEvent.push(marker);
     });
 }
 
