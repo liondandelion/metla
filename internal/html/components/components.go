@@ -124,10 +124,11 @@ func FormOTP(postTo string) g.Node {
 	}
 }
 
-func EventCardSmall(e mdb.Event) g.Node {
-	var time g.Node
+func EventCard(e mdb.Event, isSmall bool) g.Node {
+	var class, htmx, title, author, description, time, hyperscript, geojson g.Node
+
 	if e.DatetimeStart == nil {
-		time = gh.P(gh.Class("Time"), g.Text(""))
+		time = nil
 	} else {
 		yearStart, monthStart, dayStart := e.DatetimeStart.Date()
 		hourStart, minuteStart, _ := e.DatetimeStart.Clock()
@@ -142,50 +143,44 @@ func EventCardSmall(e mdb.Event) g.Node {
 		)
 	}
 
-	return gh.Article(gh.Class("event-card-small"),
-		ghtmx.Get(fmt.Sprintf("/user/event/%v-%v", e.Author, e.ID)), ghtmx.Trigger("click"), ghtmx.Swap("outerHTML"),
-		Hyperscript(`
-			on click call markerRemoveAll() then send cardCollapse to .event-card then send formEventNewClose to #sidebar-controls
-		`),
-		gh.H1(g.Text(e.Title)),
-		gh.H2(g.Text(e.Author)),
-		time,
-	)
-}
-
-func EventCard(e mdb.Event) g.Node {
-	var time g.Node
-	if e.DatetimeStart == nil {
-		time = gh.P(gh.Class("Time"), g.Text(""))
-	} else {
-		yearStart, monthStart, dayStart := e.DatetimeStart.Date()
-		hourStart, minuteStart, _ := e.DatetimeStart.Clock()
-		yearEnd, monthEnd, dayEnd := e.DatetimeEnd.Date()
-		hourEnd, minuteEnd, _ := e.DatetimeEnd.Clock()
-
-		time = gh.P(gh.Class("time"),
-			g.Text(fmt.Sprintf(" %02d.", dayStart)), g.Text(fmt.Sprintf("%02d.", monthStart)), g.Text(fmt.Sprintf("%v", yearStart)),
-			g.Text(fmt.Sprintf(" %02d:", hourStart)), g.Text(fmt.Sprintf("%02d", minuteStart)), g.Text(" UTC"),
-			g.Text(fmt.Sprintf(" %02d.", dayEnd)), g.Text(fmt.Sprintf("%02d.", monthEnd)), g.Text(fmt.Sprintf("%v", yearEnd)),
-			g.Text(fmt.Sprintf(" %02d:", hourEnd)), g.Text(fmt.Sprintf("%02d", minuteEnd)), g.Text(" UTC"),
-		)
-	}
+	title = gh.H1(g.Text(e.Title))
+	author = gh.H2(g.Text(e.Author))
 
 	divID := fmt.Sprintf("%v-%v-geojson", e.Author, e.ID)
 
-	return gh.Article(gh.Class("event-card"),
-		ghtmx.Get(fmt.Sprintf("/user/event/small/%v-%v", e.Author, e.ID)), ghtmx.Trigger("htmxCardCollapse"), ghtmx.Swap("outerHTML"),
-		Hyperscript(`
-			on load call stringJSONToMarkers(`+`@data-geojson of #`+divID+`)
+	if isSmall {
+		class = gh.Class("event-card-small")
+		htmx = g.Group{
+			ghtmx.Get(fmt.Sprintf("/user/event/%v-%v", e.Author, e.ID)), ghtmx.Trigger("click"), ghtmx.Swap("outerHTML"),
+		}
+		hyperscript = Hyperscript(`
+			on click call markerRemoveAll() then send cardCollapse to .event-card then send formEventNewClose to #sidebar-controls
+		`)
+		description = nil
+		geojson = nil
+	} else {
+		class = gh.Class("event-card")
+		htmx = g.Group{
+			ghtmx.Get(fmt.Sprintf("/user/event/%v-%v?small", e.Author, e.ID)), ghtmx.Trigger("htmxCardCollapse"), ghtmx.Swap("outerHTML"),
+		}
+		hyperscript = Hyperscript(`
+			on load call stringJSONToMarkers(` + `@data-geojson of #` + divID + `)
 			on click send cardCollapse to .event-card
 			on cardCollapse or click call markerRemoveAll() then trigger htmxCardCollapse
-		`),
-		gh.H1(g.Text(e.Title)),
-		gh.H2(g.Text(e.Author)),
-		time,
-		gh.P(g.Text(e.Description)),
-		gh.Div(gh.ID(divID), g.Attr("data-geojson", e.GeoJSON)),
-	)
+		`)
+		description = gh.P(g.Text(e.Description))
+		geojson = gh.Div(gh.ID(divID), g.Attr("data-geojson", e.GeoJSON))
+	}
+
+	return gh.Article(class, htmx, hyperscript, title, author, time, description, geojson)
+}
+
+func EventCardSmall(e mdb.Event) g.Node {
+	return EventCard(e, true)
+}
+
+func EventCardNormal(e mdb.Event) g.Node {
+	return EventCard(e, false)
 }
 
 func EventCardSmallList(events []mdb.Event, page int) g.Node {

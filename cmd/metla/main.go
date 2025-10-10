@@ -97,7 +97,6 @@ func main() {
 				r.Method("GET", "/event/page", mhttp.EventPageGet(db))
 				r.Method("GET", "/event/new", mhttp.EventNewGet(db))
 				r.Method("POST", "/event/new", mhttp.EventNewPost(db))
-				r.Method("GET", "/event/small/{author}-{id}", mhttp.EventSmallGet(db))
 				r.Method("GET", "/event/{author}-{id}", mhttp.EventGet(db))
 			})
 

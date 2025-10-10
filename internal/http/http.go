@@ -20,6 +20,7 @@ import (
 	mdb "github.com/liondandelion/metla/internal/db"
 	mc "github.com/liondandelion/metla/internal/html/components"
 	mpages "github.com/liondandelion/metla/internal/html/pages"
+	g "maragu.dev/gomponents"
 )
 
 type MetlaError struct {
@@ -530,34 +531,11 @@ func EventPageGet(db mdb.DB) http.Handler {
 	})
 }
 
-func EventSmallGet(db mdb.DB) http.Handler {
-	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
-		idString := chi.URLParam(r, "id")
-		author := chi.URLParam(r, "author")
-
-		id, err := strconv.ParseInt(idString, 10, 64)
-		if err != nil {
-			return &MetlaError{"EventSmallGet", "failed to convert id param to int", err, http.StatusInternalServerError}
-		}
-
-		event, err := db.EventGet(id, author)
-		if err != nil {
-			return &MetlaError{"EventSmallGet", "failed to retrieve event from db", err, http.StatusInternalServerError}
-		}
-
-		node := mc.EventCardSmall(event)
-		if err := node.Render(w); err != nil {
-			return &MetlaError{"EventSmallGet", "failed to render", err, http.StatusInternalServerError}
-		}
-
-		return nil
-	})
-}
-
 func EventGet(db mdb.DB) http.Handler {
 	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
 		idString := chi.URLParam(r, "id")
 		author := chi.URLParam(r, "author")
+		isSmall := r.URL.Query().Has("small")
 
 		id, err := strconv.ParseInt(idString, 10, 64)
 		if err != nil {
@@ -569,7 +547,14 @@ func EventGet(db mdb.DB) http.Handler {
 			return &MetlaError{"EventGet", "failed to retrieve event from db", err, http.StatusInternalServerError}
 		}
 
-		node := mc.EventCard(event)
+		var node g.Node
+
+		if isSmall {
+			node = mc.EventCardSmall(event)
+		} else {
+			node = mc.EventCardNormal(event)
+		}
+
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventGet", "failed to render", err, http.StatusInternalServerError}
 		}
