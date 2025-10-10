@@ -36,6 +36,11 @@ type Event struct {
 	DatetimeEnd   *time.Time
 }
 
+type EventID struct {
+	ID     int64
+	Author string
+}
+
 func Create(dbPool *pgxpool.Pool, sessionManager *scs.SessionManager) DB {
 	gob.Register(UserSessionData{})
 	return DB{dbPool, sessionManager}
@@ -154,14 +159,16 @@ func (db DB) EventGet(id int64, author string) (Event, error) {
 	var e Event
 	err := db.pool.QueryRow(context.Background(),
 		"select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end from events where id = $1 and author = $2",
-		id, author).Scan(&e.ID, &e.Author, &e.Title, &e.Description, &e.GeoJSON, &e.DatetimeStart, &e.DatetimeEnd)
+		id, author,
+	).Scan(&e.ID, &e.Author, &e.Title, &e.Description, &e.GeoJSON, &e.DatetimeStart, &e.DatetimeEnd)
 	return e, err
 }
 
 func (db DB) UserEventGetPageStartingFrom(username string, pageSize, offset int) ([]Event, error) {
 	rows, err := db.pool.Query(context.Background(),
 		"select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end from events where author = $1 order by datetime_start limit $2 offset $3",
-		username, pageSize, offset)
+		username, pageSize, offset,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -172,10 +179,62 @@ func (db DB) UserEventGetPageStartingFrom(username string, pageSize, offset int)
 func (db DB) UserEventGetAll(username string) ([]Event, error) {
 	rows, err := db.pool.Query(context.Background(),
 		"select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end from events where author = $1",
-		username)
+		username,
+	)
 	if err != nil {
 		return nil, err
 	}
 	e, err := pgx.CollectRows(rows, pgx.RowToStructByName[Event])
 	return e, err
 }
+
+func (db DB) UserFollowerInsert(followee, follower string) error {
+	_, err := db.pool.Exec(context.Background(),
+		"insert into followers (followee, follower) values ($1, $2)",
+		followee, follower,
+	)
+	return err
+}
+
+func (db DB) UserFollowersGet(username string) ([]string, error) {
+	rows, err := db.pool.Query(context.Background(),
+		"select follower from followers where followee = $1", username,
+	)
+	if err != nil {
+		return nil, err
+	}
+	f, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	return f, err
+}
+
+func (db DB) EventLinkInsert(from, to EventID) error {
+	_, err := db.pool.Exec(context.Background(),
+		"insert into event_links (id_from, author_from, id_to, author_to) values ($1, $2, $3, $4)",
+		from.ID, from.Author, to.ID, to.Author,
+	)
+	return err
+}
+
+func (db DB) EventLinksGetAll(from EventID) ([]EventID, error) {
+	rows, err := db.pool.Query(context.Background(),
+		"select (id_to, author_to) from event_links where id_from = $1 and author_from = $2",
+		from.ID, from.Author,
+	)
+	if err != nil {
+		return nil, err
+	}
+	e, err := pgx.CollectRows(rows, pgx.RowToStructByName[EventID])
+	return e, err
+}
+
+// func (db DB) EventLinksGetPageStartingFrom(from EventID, pageSize, offset int) ([]Event, error) {
+// 	rows, err := db.pool.Query(context.Background(),
+// 		"select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end from events where author = $1 order by datetime_start limit $2 offset $3",
+// 		username, pageSize, offset,
+// 	)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	e, err := pgx.CollectRows(rows, pgx.RowToStructByName[Event])
+// 	return e, err
+// }

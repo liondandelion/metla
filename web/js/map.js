@@ -7,6 +7,7 @@ let mapState = {
     markerFollowsMouse: null,
     markersFromNew: [],
     markersFromEvent: [],
+    markersFromEventLink: [],
 };
 
 function markerPlace() {
@@ -32,6 +33,10 @@ function markersFromNewRemove() {
 
 function markersFromEventRemove() {
     markerRemoveAll(mapState.markersFromEvent);
+}
+
+function markersFromEventLinkRemove() {
+    markerRemoveAll(mapState.markersFromEventLink);
 }
 
 function markersFromNewHide() {
@@ -77,11 +82,11 @@ function markersFromNewToGeoJSONString() {
     return JSON.stringify(geojson);
 }
 
-function geoJSONStringToEventMarkers(stringJSON) {
+function geoJSONStringToEventMarkers(stringJSON, color = "#3FB1CE") {
     const geojson = JSON.parse(stringJSON);
 
     geojson.features.forEach((feature) => {
-        const marker = new maplibregl.Marker()
+        const marker = new maplibregl.Marker({ color: color })
             .setLngLat(feature.geometry.coordinates)
             .addTo(map);
         mapState.markersFromEvent.push(marker);

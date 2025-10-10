@@ -12,10 +12,38 @@ import (
 	mdb "github.com/liondandelion/metla/internal/db"
 )
 
+type EventCardParams struct {
+	IsSmall bool
+}
+
 func Hyperscript(script string) g.Node {
 	trimmed := strings.TrimLeftFunc(script, unicode.IsSpace)
 	trimmed = strings.TrimRightFunc(trimmed, unicode.IsSpace)
 	return g.Attr("_", trimmed)
+}
+
+func Error(id, message string) g.Node {
+	return gh.Div(gh.Class("server-response"), gh.ID(id), g.Text(message))
+}
+
+func FormOTP(postTo string) g.Node {
+	return g.Group{
+		gh.Form(gh.ID("otpForm"), ghtmx.Post(postTo), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML"),
+			gh.Label(gh.For("otpCode"), g.Text("OTP code: ")),
+			gh.Input(gh.Type("text"), gh.Name("otpCode"), gh.ID("otpCode"), gh.Required(), gh.AutoFocus(),
+				Hyperscript(`
+					on load put '' into me
+				`),
+			),
+			gh.Button(gh.Type("submit"),
+				Hyperscript(`
+					on click wait 100ms then set value of #otpCode to ''
+				`),
+				g.Text("Send"),
+			),
+			gh.Div(gh.ID("serverResponse")),
+		),
+	}
 }
 
 func Navbar(username string, isAuthenticated, isAdmin bool) g.Node {
@@ -72,9 +100,12 @@ func Sidebar(isAuthenticated bool) g.Node {
 		)
 	} else {
 		sidebar = gh.Aside(gh.ID("sidebar"), gh.Class("sidebar"),
-			gh.Div(gh.ID("sidebar-controls"), gh.Class("sidebar-controls"),
+			gh.Div(gh.ID("sidebarControls"), gh.Class("sidebar-controls"),
 				Hyperscript(`
-					on formEventNewClose set innerHTML of #formEventNew to "" then set innerHTML of #btnAddEvent to "Add event"
+					on formEventNewClose
+						set innerHTML of #formEventNew to "" then set innerHTML of #btnAddEvent to "Add event"
+						send formEventNewClose to .unhidden
+					on isFormEventNewOpen if innerHTML of #formEventNew != "" then send formEventNewOpen to .hidden
 				`),
 				gh.Button(gh.ID("btnAddEvent"),
 					ghtmx.Trigger("fetchEvent"), ghtmx.Get("/user/event/new"), ghtmx.Target("#formEventNew"), ghtmx.Swap("outerHTML"),
@@ -82,16 +113,17 @@ func Sidebar(isAuthenticated bool) g.Node {
 						on click
 							if my innerHTML equals "Add event"
 								set my innerHTML to "Close event"
+								send formEventNewOpen to .hidden
 								trigger fetchEvent
-							else if my innerHTML equals "Close event" then
-								send formEventNewClose to #sidebar-controls
+							else if my innerHTML equals "Close event"
+								send formEventNewClose to #sidebarControls
 								call markersFromNewRemove()
 					`),
 					g.Text("Add event"),
 				),
 				gh.Form(gh.ID("formEventNew")),
 			),
-			gh.Div(gh.Class("sidebar-content"),
+			gh.Div(gh.ID("sidebarContent"), gh.Class("sidebar-content"),
 				AnchorEventNew(),
 				AnchorEventLoadMore(0),
 			),
@@ -101,32 +133,8 @@ func Sidebar(isAuthenticated bool) g.Node {
 	return sidebar
 }
 
-func Error(id, message string) g.Node {
-	return gh.Div(gh.Class("server-response"), gh.ID(id), g.Text(message))
-}
-
-func FormOTP(postTo string) g.Node {
-	return g.Group{
-		gh.Form(gh.ID("otpForm"), ghtmx.Post(postTo), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML"),
-			gh.Label(gh.For("otpCode"), g.Text("OTP code: ")),
-			gh.Input(gh.Type("text"), gh.Name("otpCode"), gh.ID("otpCode"), gh.Required(), gh.AutoFocus(),
-				Hyperscript(`
-					on load put '' into me
-				`),
-			),
-			gh.Button(gh.Type("submit"),
-				Hyperscript(`
-					on click wait 100ms then set value of #otpCode to ''
-				`),
-				g.Text("Send"),
-			),
-			gh.Div(gh.ID("serverResponse")),
-		),
-	}
-}
-
-func EventCard(e mdb.Event, isSmall bool) g.Node {
-	var class, htmx, title, author, description, time, hyperscript, geojson g.Node
+func EventCard(e mdb.Event, params EventCardParams) g.Node {
+	var class, htmx, title, author, description, time, hyperscript, geojson, btnLink, eventLinkList g.Node
 
 	if e.DatetimeStart == nil {
 		time = nil
@@ -147,22 +155,28 @@ func EventCard(e mdb.Event, isSmall bool) g.Node {
 	title = gh.H1(g.Text(e.Title))
 	author = gh.H2(g.Text(e.Author))
 
-	divID := fmt.Sprintf("%v-%v-geojson", e.Author, e.ID)
+	eventID := fmt.Sprintf("%v-%v", e.Author, e.ID)
+	divID := fmt.Sprintf("%v-geojson", eventID)
 
-	if isSmall {
+	getFrom := fmt.Sprintf("/user/event/%v-%v", e.Author, e.ID)
+	if params.IsSmall {
 		class = gh.Class("event-card-small")
 		htmx = g.Group{
-			ghtmx.Get(fmt.Sprintf("/user/event/%v-%v", e.Author, e.ID)), ghtmx.Trigger("click"), ghtmx.Swap("outerHTML"),
+			ghtmx.Get(getFrom), ghtmx.Target("this"), ghtmx.Trigger("click"), ghtmx.Swap("outerHTML"),
 		}
 		hyperscript = Hyperscript(`
 			on click send cardCollapse to .event-card then call markersFromNewHide()
 		`)
 		description = nil
 		geojson = nil
+		btnLink = nil
 	} else {
+		eventLinkList = EventLinkList(e)
+		getFrom += "?small"
+
 		class = gh.Class("event-card")
 		htmx = g.Group{
-			ghtmx.Get(fmt.Sprintf("/user/event/%v-%v?small", e.Author, e.ID)), ghtmx.Trigger("htmxCardCollapse"), ghtmx.Swap("outerHTML"),
+			ghtmx.Get(getFrom), ghtmx.Target("this"), ghtmx.Trigger("htmxCardCollapse"), ghtmx.Swap("outerHTML"),
 		}
 		hyperscript = Hyperscript(`
 			on load call geoJSONStringToEventMarkers(` + `@data-geojson of #` + divID + `)
@@ -174,26 +188,39 @@ func EventCard(e mdb.Event, isSmall bool) g.Node {
 		`)
 		description = gh.P(g.Text(e.Description))
 		geojson = gh.Div(gh.ID(divID), g.Attr("data-geojson", e.GeoJSON))
+
+		btnLink = gh.Button(gh.Class("hidden"),
+			Hyperscript(`
+				init
+					get the closest <div/>
+					if it is not #sidebarContent then remove me
+				end
+				on load
+					send isFormEventNewOpen to #sidebarControls end
+				on formEventNewOpen remove .hidden from me then add .unhidden to me end
+				on formEventNewClose add .hidden to me end
+				on click
+					halt the event's bubbling
+					send addEventLink(eventID: "`+eventID+`") to #eventLinksList
+			`),
+			g.Text("Link to this event"),
+		)
 	}
 
-	return gh.Article(class, htmx, hyperscript, title, author, time, description, geojson)
+	return gh.Article(class, htmx, hyperscript, title, author, time, description, geojson, btnLink, eventLinkList)
 }
 
-func EventCardSmall(e mdb.Event) g.Node {
-	return EventCard(e, true)
-}
-
-func EventCardNormal(e mdb.Event) g.Node {
-	return EventCard(e, false)
-}
-
-func EventCardSmallList(events []mdb.Event, page int) g.Node {
+func EventCardList(events []mdb.Event, page int, params EventCardParams) g.Node {
 	if len(events) == 0 {
 		return g.Raw("")
 	}
 
+	f := func(e mdb.Event) g.Node {
+		return EventCard(e, params)
+	}
+
 	return g.Group{
-		g.Map(events, EventCardSmall),
+		g.Map(events, f),
 		AnchorEventLoadMore(page + 1),
 	}
 }
@@ -201,10 +228,14 @@ func EventCardSmallList(events []mdb.Event, page int) g.Node {
 func EventNew() g.Node {
 	return gh.Form(gh.ID("formEventNew"), ghtmx.Post("/user/event/new"), ghtmx.Target("#anchorEventNew"), ghtmx.Swap("afterend"),
 		Hyperscript(`
-			on htmx:beforeSend set innerHTML of #serverResponse to ""
+			on htmx:beforeSend
+				if event.detail.elt is #formEventNew
+					set innerHTML of #serverResponse to ""
+			end
 			on htmx:afterRequest
-				if innerHTML of #serverResponse is ""
-					call markersFromNewRemove() then send formEventNewClose to #sidebar-controls
+				if event.detail.elt is #formEventNew
+					if innerHTML of #serverResponse is ""
+						call markersFromNewRemove() then send formEventNewClose to #sidebarControls
 		`),
 		gh.Label(gh.For("title"), g.Text("Title: ")),
 		gh.Input(gh.Type("text"), gh.Name("title"), gh.ID("title"), gh.Required()),
@@ -233,11 +264,22 @@ func EventNew() g.Node {
 		),
 		gh.Button(gh.Type("submit"),
 			Hyperscript(`
-				on click call markersFromNewToGeoJSONString() then put the result into @value of #geojson
+				on click
+					call markersFromNewToGeoJSONString() then put the result into @value of #geojson
 			`),
 			g.Text("Send"),
 		),
 		gh.Div(gh.ID("serverResponse")),
+		gh.Details(gh.ID("eventLinksList"), gh.Class("event-links-list"),
+			ghtmx.Get(""), ghtmx.Trigger("fetchEvent2"), ghtmx.Target("this"), ghtmx.Swap("beforeend"),
+			Hyperscript(`
+				on addEventLink
+					set @hx-get to "/user/event/" + event.detail.eventID + "?small" then call htmx.process(me)
+					trigger fetchEvent2
+					set @open to ""
+			`),
+			gh.Summary(g.Text("Links to other events")),
+		),
 	)
 }
 
@@ -249,9 +291,25 @@ func EventNewError(id, message string) g.Node {
 }
 
 func AnchorEventLoadMore(nextPage int) g.Node {
-	return gh.Article(ghtmx.Get(fmt.Sprintf("/user/event/page?page=%v", nextPage)), ghtmx.Trigger("intersect once"), ghtmx.Swap("afterend"))
+	return gh.Article(ghtmx.Get(fmt.Sprintf("/user/events?page=%v&small", nextPage)), ghtmx.Trigger("intersect once"), ghtmx.Swap("afterend"))
 }
 
 func AnchorEventNew() g.Node {
 	return gh.Article(gh.ID("anchorEventNew"))
+}
+
+func AnchorEventLinkLoadMore(e mdb.Event, nextPage int) g.Node {
+	return gh.Article(ghtmx.Get(fmt.Sprintf("/user/event/{%v}-{%v}/links?page=%v&small", e.Author, e.ID, nextPage)),
+		ghtmx.Trigger("intersect once"), ghtmx.Swap("afterend"),
+	)
+}
+
+func EventLinkList(e mdb.Event) g.Node {
+	return gh.Details(gh.ID("eventLinksList"), gh.Class("event-links-list"),
+		Hyperscript(`
+			on click halt the event's bubbling
+		`),
+		gh.Summary(g.Text("Links to other events")),
+		AnchorEventLinkLoadMore(e, 0),
+	)
 }

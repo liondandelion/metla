@@ -94,10 +94,11 @@ func main() {
 				r.Method("GET", "/otp/disable", mhttp.OTPDisable(db, ghGCM))
 				r.Method("POST", "/otp/disable", mhttp.OTPDisable(db, ghGCM))
 
-				r.Method("GET", "/event/page", mhttp.EventPageGet(db))
+				r.Method("GET", "/events", mhttp.EventPageGet(db))
 				r.Method("GET", "/event/new", mhttp.EventNewGet(db))
 				r.Method("POST", "/event/new", mhttp.EventNewPost(db))
 				r.Method("GET", "/event/{author}-{id}", mhttp.EventGet(db))
+				r.Method("GET", "/event/{author}-{id}/links", mhttp.EventLinksPageGet(db))
 			})
 
 			r.Group(func(r chi.Router) {
