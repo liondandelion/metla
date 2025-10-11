@@ -114,9 +114,11 @@ func Sidebar(isAuthenticated bool) g.Node {
 							if my innerHTML equals "Add event"
 								set my innerHTML to "Close event"
 								send formEventNewOpen to .btn-link-this
+								send activateContent to #sidebarContent
 								trigger fetchEvent
 							else if my innerHTML equals "Close event"
 								send formEventNewClose to #sidebarControls
+								send activateContent to #sidebarContent
 								call markersFromNewRemove()
 					`),
 					g.Text("Add event"),
@@ -124,7 +126,7 @@ func Sidebar(isAuthenticated bool) g.Node {
 				gh.Form(gh.ID("formEventNew")),
 				gh.Div(gh.ID("history"), gh.Class("history"),
 					gh.Button(gh.ID("btnGoBackward"), gh.Class("btn-go-backward hidden"),
-						ghtmx.Trigger("fetchHistory"), ghtmx.Target("#sidebarContent"), ghtmx.Swap("innerHTML"),
+						ghtmx.Trigger("fetchHistory"), ghtmx.Target(".sidebar-content"), ghtmx.Swap("innerHTML"),
 						Hyperscript(`
 							on currentPage(url)
 								set :currentURL to url
@@ -139,7 +141,7 @@ func Sidebar(isAuthenticated bool) g.Node {
 								append id to :ids
 								append scrollTop to :scrolls
 
-								remove .hidden from #btnGoBackward
+								remove .hidden from me
 							end
 
 							on click
@@ -162,13 +164,45 @@ func Sidebar(isAuthenticated bool) g.Node {
 
 									call :scrolls.pop() then set :scroll to it
 									set scrollTop of #sidebar to :scroll
+								end
+							end
+
+							on hide add .hidden to me end
+							on unhide if :backwardHistory is not empty then remove .hidden from me
 						`),
 						g.Text("<-"),
 					),
 				),
 			),
 			gh.Div(gh.ID("sidebarContent"), gh.Class("sidebar-content"),
+				Hyperscript(`
+					on activateContent
+						add .sidebar-content to me
+						remove .hidden from me
+						add .hidden to #sidebarContentLinks
+						remove .sidebar-content from #sidebarContentLinks
+						send cardCollapse to .event-card
+						if #btnEventLinksView is not empty then send reset to #btnEventLinksView end
+						send unhide to #btnGoBackward
+				`),
 				AnchorEventLoadMore(0),
+			),
+			gh.Div(gh.ID("sidebarContentLinks"), gh.Class("sidebar-content hidden"),
+				ghtmx.Trigger("fetchEvent2"), ghtmx.Swap("beforeend"),
+				Hyperscript(`
+					on addEventLink(eventID)
+						set @hx-get to "/user/event/" + eventID + "?small" then call htmx.process(me)
+						trigger fetchEvent2
+					end
+
+					on activateContent
+						add .sidebar-content to me
+						remove .hidden from me
+						add .hidden to #sidebarContent
+						remove .sidebar-content from #sidebarContent
+						send cardCollapse to .event-card
+						send hide to #btnGoBackward
+				`),
 			),
 		)
 	}
@@ -177,7 +211,7 @@ func Sidebar(isAuthenticated bool) g.Node {
 }
 
 func EventCard(e mdb.Event, params EventCardParams) g.Node {
-	var class, htmx, title, author, description, time, hyperscript, geojson, btnLinkThis, btnLinksSee g.Node
+	var class, htmx, title, author, description, time, hyperscript, geojson, btns g.Node
 
 	if e.DatetimeStart == nil {
 		time = nil
@@ -213,20 +247,8 @@ func EventCard(e mdb.Event, params EventCardParams) g.Node {
 		`)
 		description = nil
 		geojson = nil
-		btnLinkThis = nil
-		btnLinksSee = nil
+		btns = nil
 	} else {
-		btnLinksSee = gh.Button(gh.ID("btnLinksSee"),
-			ghtmx.Get(fmt.Sprintf("/user/event/%v-%v/links?page=%v&small", e.Author, e.ID, 0)),
-			ghtmx.Target("#sidebarContent"), ghtmx.Swap("innerHTML"),
-			Hyperscript(`
-				on click
-					halt the event's bubbling
-					send cardCollapse to .event-card
-					send pushURL(id: "`+eventID+`", scrollTop: scrollTop of #sidebar) to #btnGoBackward
-			`),
-			g.Text("See links"),
-		)
 		getFrom += "?small"
 
 		class = gh.Class("event-card")
@@ -234,35 +256,78 @@ func EventCard(e mdb.Event, params EventCardParams) g.Node {
 			ghtmx.Get(getFrom), ghtmx.Target("this"), ghtmx.Trigger("htmxCardCollapse"), ghtmx.Swap("outerHTML"),
 		}
 		hyperscript = Hyperscript(`
-			on load call geoJSONStringToEventMarkers(` + `@data-geojson of #` + divID + `)
-			on click send cardCollapse to .event-card
+			on load call geoJSONStringToEventMarkers(` + `@data-geojson of #` + divID + `) end
+
+			on click send cardCollapse to .event-card end
+
 			on cardCollapse or click
 				call markersFromEventRemove()
 				call markersFromNewUnhide()
 				trigger htmxCardCollapse
+			end
+
+			on removeYourself
+				send cardCollapse to .event-card
+				remove me
 		`)
 		description = gh.P(g.Text(e.Description))
 		geojson = gh.Div(gh.ID(divID), g.Attr("data-geojson", e.GeoJSON))
 
-		btnLinkThis = gh.Button(gh.Class("btn-link-this hidden"),
-			Hyperscript(`
-				init
-					get the closest <div/>
-					if it is not #sidebarContent then remove me
-				end
-				on load
-					send isFormEventNewOpen to #sidebarControls end
-				on formEventNewOpen remove .hidden from me end
-				on formEventNewClose add .hidden to me end
-				on click
-					halt the event's bubbling
-					send addEventLink(eventID: "`+eventID+`") to #eventLinksList
-			`),
-			g.Text("Link to this event"),
-		)
+		btns = g.Group{
+			gh.Button(gh.ID("btnLinksView"),
+				ghtmx.Get(fmt.Sprintf("/user/event/%v-%v/links?page=%v&small", e.Author, e.ID, 0)),
+				ghtmx.Trigger("fetchContent"), ghtmx.Target(".sidebar-content"), ghtmx.Swap("innerHTML"),
+				Hyperscript(`
+					on load
+						get the closest <div/>
+						if it is not #sidebarContent remove me
+					end
+
+					on click
+						halt the event's bubbling
+						send cardCollapse to .event-card
+						send activateContent to #sidebarContent
+						send pushURL(id: "`+eventID+`", scrollTop: scrollTop of #sidebar) to #btnGoBackward
+						trigger fetchContent
+				`),
+				g.Text("View links"),
+			),
+			gh.Button(gh.Class("btn-link-this hidden"),
+				Hyperscript(`
+					init
+						get the closest <div/>
+						if it is not #sidebarContent then remove me
+					end
+
+					on load send isFormEventNewOpen to #sidebarControls end
+
+					on formEventNewOpen remove .hidden from me end
+
+					on formEventNewClose add .hidden to me end
+
+					on click
+						halt the event's bubbling
+						send addEventLink(eventID: "`+eventID+`") to #sidebarContentLinks
+				`),
+				g.Text("Link to this event"),
+			),
+			gh.Button(gh.ID("btnLinkRemove"),
+				Hyperscript(`
+					init
+						get the closest <div/> to the closest <article/>
+						if it is not #sidebarContentLinks then remove me
+					end
+
+					on click
+						halt the event's bubbling
+						send removeYourself to the closest <article/>
+				`),
+				g.Text("Remove this link"),
+			),
+		}
 	}
 
-	return gh.Article(gh.ID(eventID), class, htmx, hyperscript, title, author, time, description, geojson, btnLinkThis, btnLinksSee)
+	return gh.Article(gh.ID(eventID), class, htmx, hyperscript, title, author, time, description, geojson, btns)
 }
 
 func EventCardList(events []mdb.Event, page int, params EventCardParams) g.Node {
@@ -332,6 +397,25 @@ func EventNew() g.Node {
 			`),
 			g.Text("Remove marker"),
 		),
+		gh.Button(gh.ID("btnEventLinksView"),
+			Hyperscript(`
+				on click
+					halt the event's bubbling
+					if my innerHTML is equal to "View added links to this event"
+						set my innerHTML to "Go back to events"
+						send activateContent to #sidebarContentLinks
+					else
+						set my innerHTML to "View added links to this event"
+						send activateContent to #sidebarContent
+					end
+				end
+
+				on reset
+					set my innerHTML to "View added links to this event"
+					send cardCollapse to .event-card
+			`),
+			g.Text("View added links to this event"),
+		),
 		gh.Button(gh.Type("submit"),
 			Hyperscript(`
 				on click
@@ -340,16 +424,6 @@ func EventNew() g.Node {
 			g.Text("Send"),
 		),
 		gh.Div(gh.ID("serverResponse")),
-		gh.Details(gh.ID("eventLinksList"), gh.Class("event-links-list"),
-			ghtmx.Get(""), ghtmx.Trigger("fetchEvent2"), ghtmx.Target("this"), ghtmx.Swap("beforeend"),
-			Hyperscript(`
-				on addEventLink(eventID)
-					set @hx-get to "/user/event/" + eventID + "?small" then call htmx.process(me)
-					trigger fetchEvent2
-					set @open to ""
-			`),
-			gh.Summary(g.Text("Links to other events")),
-		),
 	)
 }
 
