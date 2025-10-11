@@ -155,11 +155,11 @@ func (db DB) EventInsert(e *Event) error {
 	return err
 }
 
-func (db DB) EventGet(id int64, author string) (Event, error) {
+func (db DB) EventGet(id EventID) (Event, error) {
 	var e Event
 	err := db.pool.QueryRow(context.Background(),
 		"select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end from events where id = $1 and author = $2",
-		id, author,
+		id.ID, id.Author,
 	).Scan(&e.ID, &e.Author, &e.Title, &e.Description, &e.GeoJSON, &e.DatetimeStart, &e.DatetimeEnd)
 	return e, err
 }
@@ -168,6 +168,23 @@ func (db DB) UserEventGetPageStartingFrom(username string, pageSize, offset int)
 	rows, err := db.pool.Query(context.Background(),
 		"select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end from events where author = $1 order by datetime_start limit $2 offset $3",
 		username, pageSize, offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	e, err := pgx.CollectRows(rows, pgx.RowToStructByName[Event])
+	return e, err
+}
+
+func (db DB) UserEventGetUpToPage(username string, pageSize, page int) ([]Event, error) {
+	rows, err := db.pool.Query(context.Background(),
+		`
+		select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end
+		from events
+		where author = $1
+		order by datetime_start limit $2
+		`,
+		username, pageSize*page,
 	)
 	if err != nil {
 		return nil, err
@@ -249,6 +266,27 @@ func (db DB) EventLinksGetPageStartingFrom(from EventID, pageSize, offset int) (
 		order by datetime_start limit $3 offset $4
 		`,
 		from.ID, from.Author, pageSize, offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	e, err := pgx.CollectRows(rows, pgx.RowToStructByName[Event])
+	return e, err
+}
+
+func (db DB) EventLinksGetUpToPage(from EventID, pageSize, page int) ([]Event, error) {
+	rows, err := db.pool.Query(context.Background(),
+		`
+		select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end
+		from events e
+		where (id, author) in (
+			select id_to, author_to
+			from event_links l
+			where id_from = $1 and author_from = $2
+		)
+		order by datetime_start limit $3
+		`,
+		from.ID, from.Author, pageSize*page,
 	)
 	if err != nil {
 		return nil, err

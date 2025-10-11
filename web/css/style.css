@@ -283,3 +283,14 @@ textarea {
 .hidden {
     display: none;
 }
+
+.history {
+    display: grid;
+    grid-template-rows: 1;
+    grid-template-columns: 2;
+}
+
+.btn-go-backward {
+    margin-right: auto;
+    grid-column: 1 / span 1;
+}

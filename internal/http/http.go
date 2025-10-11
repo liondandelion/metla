@@ -516,8 +516,10 @@ func EventPageGet(db mdb.DB) http.Handler {
 		var events []mdb.Event
 		if !queryParams.Has("page") {
 			events, err = db.UserEventGetAll(data.Username)
-		} else {
+		} else if !queryParams.Has("upToPage") {
 			events, err = db.UserEventGetPageStartingFrom(data.Username, pageSize, page*pageSize)
+		} else {
+			events, err = db.UserEventGetPageStartingFrom(data.Username, pageSize*(page+1), 0)
 		}
 
 		if err != nil {
@@ -554,18 +556,26 @@ func EventLinksPageGet(db mdb.DB) http.Handler {
 			return &MetlaError{"EventLinksPageGet", "failed to convert page param to int", err, http.StatusInternalServerError}
 		}
 
+		eventIDFrom := mdb.EventID{ID: id, Author: author}
+		eventFrom, err := db.EventGet(eventIDFrom)
+		if err != nil {
+			return &MetlaError{"EventLinksPageGet", "failed to get event for links", err, http.StatusInternalServerError}
+		}
+
 		var events []mdb.Event
 		if !queryParams.Has("page") {
-			events, err = db.EventLinksGetAll(mdb.EventID{ID: id, Author: author})
+			events, err = db.EventLinksGetAll(eventIDFrom)
+		} else if !queryParams.Has("upToPage") {
+			events, err = db.EventLinksGetPageStartingFrom(eventIDFrom, pageSize, page*pageSize)
 		} else {
-			events, err = db.EventLinksGetPageStartingFrom(mdb.EventID{ID: id, Author: author}, pageSize, page*pageSize)
+			events, err = db.EventLinksGetPageStartingFrom(eventIDFrom, pageSize*(page+1), 0)
 		}
 
 		if err != nil {
 			return &MetlaError{"EventLinksPageGet", "failed to retrieve events", err, http.StatusInternalServerError}
 		}
 
-		node := mc.EventCardLinksList(events, page, params)
+		node := mc.EventCardLinksList(eventFrom, events, page, params)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventLinksPageGet", "failed to render", err, http.StatusInternalServerError}
 		}
@@ -587,7 +597,7 @@ func EventGet(db mdb.DB) http.Handler {
 			return &MetlaError{"EventGet", "failed to convert id param to int", err, http.StatusInternalServerError}
 		}
 
-		event, err := db.EventGet(id, author)
+		event, err := db.EventGet(mdb.EventID{ID: id, Author: author})
 		if err != nil {
 			return &MetlaError{"EventGet", "failed to retrieve event from db", err, http.StatusInternalServerError}
 		}

@@ -104,8 +104,8 @@ func Sidebar(isAuthenticated bool) g.Node {
 				Hyperscript(`
 					on formEventNewClose
 						set innerHTML of #formEventNew to "" then set innerHTML of #btnAddEvent to "Add event"
-						send formEventNewClose to .unhidden
-					on isFormEventNewOpen if innerHTML of #formEventNew != "" then send formEventNewOpen to .hidden
+						send formEventNewClose to .btn-link-this
+					on isFormEventNewOpen if innerHTML of #formEventNew != "" then send formEventNewOpen to .btn-link-this
 				`),
 				gh.Button(gh.ID("btnAddEvent"),
 					ghtmx.Trigger("fetchEvent"), ghtmx.Get("/user/event/new"), ghtmx.Target("#formEventNew"), ghtmx.Swap("outerHTML"),
@@ -113,7 +113,7 @@ func Sidebar(isAuthenticated bool) g.Node {
 						on click
 							if my innerHTML equals "Add event"
 								set my innerHTML to "Close event"
-								send formEventNewOpen to .hidden
+								send formEventNewOpen to .btn-link-this
 								trigger fetchEvent
 							else if my innerHTML equals "Close event"
 								send formEventNewClose to #sidebarControls
@@ -122,9 +122,36 @@ func Sidebar(isAuthenticated bool) g.Node {
 					g.Text("Add event"),
 				),
 				gh.Form(gh.ID("formEventNew")),
+				gh.Div(gh.ID("history"), gh.Class("history"),
+					gh.Button(gh.ID("btnGoBackward"), gh.Class("btn-go-backward hidden"),
+						ghtmx.Trigger("fetchHistory"), ghtmx.Target("#sidebarContent"), ghtmx.Swap("innerHTML"),
+						Hyperscript(`
+							on currentPage(url)
+								set :currentURL to url
+							end
+
+							on pushURL
+								if no :backwardHistory set :backwardHistory to [] end
+								append :currentURL to :backwardHistory
+								remove .hidden from #btnGoBackward
+							end
+
+							on click
+								halt the event's bubbling
+								send cardCollapse to .event-card
+
+								call :backwardHistory.pop() then set @hx-get to the result then call htmx.process(me)
+								send currentPage(url: @hx-get) to me
+
+								if :backwardHistory is empty add .hidden to me end
+								trigger fetchHistory
+							end
+						`),
+						g.Text("<-"),
+					),
+				),
 			),
 			gh.Div(gh.ID("sidebarContent"), gh.Class("sidebar-content"),
-				AnchorEventNew(),
 				AnchorEventLoadMore(0),
 			),
 		)
@@ -172,9 +199,15 @@ func EventCard(e mdb.Event, params EventCardParams) g.Node {
 		btnLinkThis = nil
 		btnLinksSee = nil
 	} else {
-		btnLinksSee = gh.Button(
+		btnLinksSee = gh.Button(gh.ID("btnLinksSee"),
 			ghtmx.Get(fmt.Sprintf("/user/event/%v-%v/links?page=%v&small", e.Author, e.ID, 0)),
 			ghtmx.Target("#sidebarContent"), ghtmx.Swap("innerHTML"),
+			Hyperscript(`
+				on click
+					halt the event's bubbling
+					send cardCollapse to .event-card
+					send pushURL to #btnGoBackward
+			`),
 			g.Text("See links"),
 		)
 		getFrom += "?small"
@@ -194,7 +227,7 @@ func EventCard(e mdb.Event, params EventCardParams) g.Node {
 		description = gh.P(g.Text(e.Description))
 		geojson = gh.Div(gh.ID(divID), g.Attr("data-geojson", e.GeoJSON))
 
-		btnLinkThis = gh.Button(gh.Class("hidden"),
+		btnLinkThis = gh.Button(gh.Class("btn-link-this hidden"),
 			Hyperscript(`
 				init
 					get the closest <div/>
@@ -202,7 +235,7 @@ func EventCard(e mdb.Event, params EventCardParams) g.Node {
 				end
 				on load
 					send isFormEventNewOpen to #sidebarControls end
-				on formEventNewOpen remove .hidden from me then add .unhidden to me end
+				on formEventNewOpen remove .hidden from me end
 				on formEventNewClose add .hidden to me end
 				on click
 					halt the event's bubbling
@@ -230,7 +263,7 @@ func EventCardList(events []mdb.Event, page int, params EventCardParams) g.Node 
 	}
 }
 
-func EventCardLinksList(events []mdb.Event, page int, params EventCardParams) g.Node {
+func EventCardLinksList(eventFrom mdb.Event, events []mdb.Event, page int, params EventCardParams) g.Node {
 	if len(events) == 0 {
 		return g.Raw("")
 	}
@@ -241,12 +274,12 @@ func EventCardLinksList(events []mdb.Event, page int, params EventCardParams) g.
 
 	return g.Group{
 		g.Map(events, f),
-		AnchorEventLinkLoadMore(events[0], page+1),
+		AnchorEventLinkLoadMore(eventFrom, page+1),
 	}
 }
 
 func EventNew() g.Node {
-	return gh.Form(gh.ID("formEventNew"), ghtmx.Post("/user/event/new"), ghtmx.Target("#anchorEventNew"), ghtmx.Swap("afterend"),
+	return gh.Form(gh.ID("formEventNew"), ghtmx.Post("/user/event/new"), ghtmx.Target("#sidebarContent"), ghtmx.Swap("afterbegin"),
 		Hyperscript(`
 			on htmx:beforeSend
 				if event.detail.elt is #formEventNew
@@ -305,21 +338,30 @@ func EventNew() g.Node {
 
 func EventNewError(id, message string) g.Node {
 	return g.Group{
-		AnchorEventNew(),
 		gh.Div(gh.Class("server-response"), gh.ID(id), ghtmx.SwapOOB("outerHTML"), g.Text(message)),
 	}
 }
 
 func AnchorEventLoadMore(nextPage int) g.Node {
-	return gh.Article(ghtmx.Get(fmt.Sprintf("/user/events?page=%v&small", nextPage)), ghtmx.Trigger("intersect once"), ghtmx.Swap("afterend"))
-}
-
-func AnchorEventNew() g.Node {
-	return gh.Article(gh.ID("anchorEventNew"))
+	url := fmt.Sprintf("/user/events?page=%v&small", nextPage)
+	nextPageString := fmt.Sprintf("%v", nextPage)
+	return gh.Article(ghtmx.Get(url), ghtmx.Trigger("intersect once"), ghtmx.Target("this"), ghtmx.Swap("afterend"),
+		Hyperscript(`
+			on htmx:beforeSend
+				if event.detail.elt is me
+					send currentPage(url: @hx-get + "&upToPage", page: `+nextPageString+`) to #btnGoBackward
+		`),
+	)
 }
 
 func AnchorEventLinkLoadMore(e mdb.Event, nextPage int) g.Node {
-	return gh.Article(ghtmx.Get(fmt.Sprintf("/user/event/%v-%v/links?page=%v&small", e.Author, e.ID, nextPage)),
-		ghtmx.Trigger("intersect once"), ghtmx.Swap("afterend"),
+	url := fmt.Sprintf("/user/event/%v-%v/links?page=%v&small", e.Author, e.ID, nextPage)
+	nextPageString := fmt.Sprintf("%v", nextPage)
+	return gh.Article(ghtmx.Get(url), ghtmx.Trigger("intersect once"), ghtmx.Target("this"), ghtmx.Swap("afterend"),
+		Hyperscript(`
+			on htmx:beforeSend
+				if event.detail.elt is me
+					send currentPage(url: @hx-get + "&upToPage", page: `+nextPageString+`) to #btnGoBackward
+		`),
 	)
 }
