@@ -104,8 +104,6 @@ func Sidebar(isAuthenticated bool) g.Node {
 				Hyperscript(`
 					on formEventNewClose
 						set innerHTML of #formEventNew to "" then set innerHTML of #btnAddEvent to "Add event"
-						send formEventNewClose to .btn-link-this
-					on isFormEventNewOpen if innerHTML of #formEventNew != "" then send formEventNewOpen to .btn-link-this
 				`),
 				gh.Button(gh.ID("btnAddEvent"),
 					ghtmx.Trigger("fetchEvent"), ghtmx.Get("/user/event/new"), ghtmx.Target("#formEventNew"), ghtmx.Swap("outerHTML"),
@@ -120,6 +118,12 @@ func Sidebar(isAuthenticated bool) g.Node {
 								send formEventNewClose to #sidebarControls
 								send activateContent to #sidebarContent
 								call markersFromNewRemove()
+							end
+						end
+
+						on btnLinkThisClicked
+							if my innerHTML equals "Add event" then send click to me
+							else send newEventFormOpen to #btnLinkThis end
 					`),
 					g.Text("Add event"),
 				),
@@ -138,14 +142,12 @@ func Sidebar(isAuthenticated bool) g.Node {
 								set :currentURL to url
 							end
 
-							on pushURL(id, scrollTop)
+							on pushURL(id)
 								if no :backwardHistory set :backwardHistory to [] end
 								if no :ids set :ids to [] end
-								if no :scrolls set :scrolls to [] end
 
 								append :currentURL to :backwardHistory
 								append id to :ids
-								append scrollTop to :scrolls
 
 								remove .hidden from me
 							end
@@ -165,11 +167,9 @@ func Sidebar(isAuthenticated bool) g.Node {
 
 							on shouldCardActivate
 								if :id is not empty
+									go to the middle of #{:id}
 									send click to #{:id}
 									set :id to ""
-
-									call :scrolls.pop() then set :scroll to it
-									set scrollTop of #sidebar to :scroll
 								end
 							end
 
@@ -251,8 +251,10 @@ func EventCard(e mdb.Event, params EventCardParams) g.Node {
 			ghtmx.Get(getFrom), ghtmx.Target("this"), ghtmx.Trigger("click"), ghtmx.Swap("outerHTML"),
 		}
 		hyperscript = Hyperscript(`
-			on load send shouldCardActivate to #btnGoBackward
-			on click send cardCollapse to .event-card then call markersFromNewHide()
+			on load send shouldCardActivate to #btnGoBackward end
+			on click
+				send cardCollapse to .event-card
+				call markersFromNewHide()
 		`)
 		description = nil
 		geojson = nil
@@ -267,12 +269,16 @@ func EventCard(e mdb.Event, params EventCardParams) g.Node {
 		hyperscript = Hyperscript(`
 			on load call geoJSONStringToEventMarkers(` + `@data-geojson of #` + divID + `) end
 
-			on click send cardCollapse to .event-card end
+			on click
+				send cardCollapse to .event-card
+			end
 
-			on cardCollapse or click
-				call markersFromEventRemove()
-				call markersFromNewUnhide()
-				trigger htmxCardCollapse
+			on cardCollapse
+				if I do not match .non-collapsable
+					call markersFromEventRemove()
+					call markersFromNewUnhide()
+					trigger htmxCardCollapse
+				end
 			end
 
 			on removeYourself
@@ -296,31 +302,36 @@ func EventCard(e mdb.Event, params EventCardParams) g.Node {
 						halt the event's bubbling
 						send cardCollapse to .event-card
 						send activateContent to #sidebarContent
-						send pushURL(id: "`+eventID+`", scrollTop: scrollTop of #sidebar) to #btnGoBackward
+						send pushURL(id: "`+eventID+`") to #btnGoBackward
 						trigger fetchContent
 				`),
 				g.Text("View links"),
 			),
-			gh.Button(gh.ID("btnLinkThis"), gh.Class("btn-link-this hidden"),
+			gh.Button(gh.ID("btnLinkThis"), gh.Class("btn-link-this"),
 				Hyperscript(`
 					init
 						get the closest <div/>
-						if it is not #sidebarContent then remove me
+						if it is not #sidebarContent then remove me end
 					end
-
-					on load send isFormEventNewOpen to #sidebarControls end
-
-					on formEventNewOpen remove .hidden from me end
-
-					on formEventNewClose add .hidden to me end
 
 					on click
 						halt the event's bubbling
-						get @value of #links then call it.includes("`+eventID+`")
-						if the result is false
-							send addEventLink(eventID: "`+eventID+`") to #sidebarContentLinks
+						set :waiting to true
+						add .non-collapsable to #`+eventID+`
+						send btnLinkThisClicked to #btnAddEvent
+					end
+
+					on newEventFormOpen
+						if :waiting is true
+							set :waiting to false
+							remove .non-collapsable from #`+eventID+`
+							get @value of #links then call it.includes("`+eventID+`")
+							if the result is false
+								send addEventLink(eventID: "`+eventID+`") to #sidebarContentLinks
+							end
+						end
 				`),
-				g.Text("Link to this event"),
+				g.Text("Link to this from new event"),
 			),
 			gh.Button(gh.ID("btnLinkRemove"),
 				Hyperscript(`
@@ -376,6 +387,7 @@ func EventCardLinksList(eventFrom mdb.Event, events []mdb.Event, page int, param
 func EventNew() g.Node {
 	return gh.Form(gh.ID("formEventNew"), ghtmx.Post("/user/event/new"), ghtmx.Target("#sidebarContent"), ghtmx.Swap("afterbegin"),
 		Hyperscript(`
+			on load trigger newEventFormOpen on #btnLinkThis end
 			on htmx:beforeSend
 				if event.detail.elt is #formEventNew
 					set innerHTML of #serverResponse to ""
