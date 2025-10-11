@@ -7,6 +7,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
+	"unicode"
 
 	mdb "github.com/liondandelion/metla/internal/db"
 )
@@ -39,4 +42,22 @@ func HTMXRedirect(w http.ResponseWriter, path string) {
 	h := w.Header()
 	h.Set("HX-Redirect", path)
 	w.WriteHeader(http.StatusOK)
+}
+
+func LinksStringToEventIDs(links string) ([]mdb.EventID, error) {
+	var linkIDs []mdb.EventID
+	trimmed := strings.TrimRightFunc(links, unicode.IsSpace)
+	linkStrings := strings.Split(trimmed, " ")
+	for _, linkString := range linkStrings {
+		ls := strings.Split(linkString, "-")
+		author := ls[0]
+		idString := ls[1]
+
+		id, err := strconv.ParseInt(idString, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		linkIDs = append(linkIDs, mdb.EventID{ID: id, Author: author})
+	}
+	return linkIDs, nil
 }

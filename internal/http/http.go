@@ -631,7 +631,13 @@ func EventNewPost(db mdb.DB) http.Handler {
 		datetimeStart := r.PostFormValue("datetimeStart")
 		datetimeEnd := r.PostFormValue("datetimeEnd")
 		geojson := r.PostFormValue("geojson")
+		links := r.PostFormValue("links")
 		data := db.UserSessionDataGet(r.Context())
+
+		linkIDs, err := LinksStringToEventIDs(links)
+		if err != nil {
+			return &MetlaError{"EventNewPost", "failed to convert links to slice of ids", err, http.StatusInternalServerError}
+		}
 
 		if (datetimeStart == "" && datetimeEnd != "") || (datetimeEnd == "" && datetimeStart != "") {
 			node := mc.EventNewError("serverResponse", "Either specify both times or neither")
@@ -679,9 +685,14 @@ func EventNewPost(db mdb.DB) http.Handler {
 			event.DatetimeEnd = nil
 		}
 
-		err := db.EventInsert(&event)
+		err = db.EventInsert(&event)
 		if err != nil {
 			return &MetlaError{"EventNewPost", "failed to insert event into the db", err, http.StatusInternalServerError}
+		}
+
+		err = db.EventLinksInsert(mdb.EventID{ID: event.ID, Author: data.Username}, linkIDs)
+		if err != nil {
+			return &MetlaError{"EventNewPost", "failed to insert event links into the db", err, http.StatusInternalServerError}
 		}
 
 		var params mc.EventCardParams

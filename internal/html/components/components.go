@@ -199,6 +199,7 @@ func Sidebar(isAuthenticated bool) g.Node {
 				Hyperscript(`
 					on addEventLink(eventID)
 						set @hx-get to "/user/event/" + eventID + "?small" then call htmx.process(me)
+						append eventID + " " to @value of #links
 						trigger fetchEvent2
 					end
 
@@ -300,7 +301,7 @@ func EventCard(e mdb.Event, params EventCardParams) g.Node {
 				`),
 				g.Text("View links"),
 			),
-			gh.Button(gh.Class("btn-link-this hidden"),
+			gh.Button(gh.ID("btnLinkThis"), gh.Class("btn-link-this hidden"),
 				Hyperscript(`
 					init
 						get the closest <div/>
@@ -315,7 +316,9 @@ func EventCard(e mdb.Event, params EventCardParams) g.Node {
 
 					on click
 						halt the event's bubbling
-						send addEventLink(eventID: "`+eventID+`") to #sidebarContentLinks
+						get @value of #links then call it.includes("`+eventID+`")
+						if the result is false
+							send addEventLink(eventID: "`+eventID+`") to #sidebarContentLinks
 				`),
 				g.Text("Link to this event"),
 			),
@@ -328,6 +331,8 @@ func EventCard(e mdb.Event, params EventCardParams) g.Node {
 
 					on click
 						halt the event's bubbling
+						set replacement to "`+eventID+` "
+						get @value of #links then call it.replace(replacement, "") then set @value of #links to it
 						send removeYourself to the closest <article/>
 				`),
 				g.Text("Remove this link"),
@@ -389,9 +394,11 @@ func EventNew() g.Node {
 		gh.Label(gh.For("datetimeEnd"), g.Text("Ending at (optional): ")),
 		gh.Input(gh.Type("datetime-local"), gh.Name("datetimeEnd"), gh.ID("datetimeEnd")),
 		gh.Input(gh.Type("hidden"), gh.Name("geojson"), gh.ID("geojson")),
+		gh.Input(gh.Type("hidden"), gh.Name("links"), gh.ID("links"), gh.Value("")),
 		gh.Button(gh.Type("button"),
 			Hyperscript(`
 				on click
+					halt the event's bubbling
 					call markerPlace()
 					send cardCollapse to .event-card
 			`),
@@ -400,6 +407,7 @@ func EventNew() g.Node {
 		gh.Button(gh.Type("button"),
 			Hyperscript(`
 				on click
+					halt the event's bubbling
 					call markerRemove()
 					send cardCollapse to .event-card
 			`),
@@ -408,7 +416,7 @@ func EventNew() g.Node {
 		gh.Button(gh.ID("btnEventLinksView"),
 			Hyperscript(`
 				on click
-					halt the event's bubbling
+					halt the event
 					if my innerHTML is equal to "View added links to this event"
 						set my innerHTML to "Go back to events"
 						send activateContent to #sidebarContentLinks
@@ -428,6 +436,7 @@ func EventNew() g.Node {
 			Hyperscript(`
 				on click
 					call markersFromNewToGeoJSONString() then put the result into @value of #geojson
+					send activateContent to #sidebarContent
 			`),
 			g.Text("Send"),
 		),

@@ -232,6 +232,16 @@ func (db DB) EventLinkInsert(from, to EventID) error {
 	return err
 }
 
+func (db DB) EventLinksInsert(from EventID, to []EventID) error {
+	for _, t := range to {
+		err := db.EventLinkInsert(from, t)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (db DB) EventLinksGetAll(from EventID) ([]Event, error) {
 	rows, err := db.pool.Query(context.Background(),
 		`
