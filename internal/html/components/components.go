@@ -124,7 +124,13 @@ func Sidebar(isAuthenticated bool) g.Node {
 					g.Text("Add event"),
 				),
 				gh.Form(gh.ID("formEventNew")),
-				gh.Div(gh.ID("history"), gh.Class("history"),
+				gh.Button(gh.ID("btnSearchEvents"),
+					g.Text("Search events"),
+				),
+				gh.Div(gh.Class("info-box"),
+					gh.P(gh.ID("currentContentText"), gh.Class("current-content-text"),
+						g.Text("Timeline"),
+					),
 					gh.Button(gh.ID("btnGoBackward"), gh.Class("btn-go-backward hidden"),
 						ghtmx.Trigger("fetchHistory"), ghtmx.Target(".sidebar-content"), ghtmx.Swap("innerHTML"),
 						Hyperscript(`
@@ -184,6 +190,7 @@ func Sidebar(isAuthenticated bool) g.Node {
 						send cardCollapse to .event-card
 						if #btnEventLinksView is not empty then send reset to #btnEventLinksView end
 						send unhide to #btnGoBackward
+						set innerHTML of #currentContentText to "Timeline"
 				`),
 				AnchorEventLoadMore(0),
 			),
@@ -202,6 +209,7 @@ func Sidebar(isAuthenticated bool) g.Node {
 						remove .sidebar-content from #sidebarContent
 						send cardCollapse to .event-card
 						send hide to #btnGoBackward
+						set innerHTML of #currentContentText to "Linked events"
 				`),
 			),
 		)

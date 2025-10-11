@@ -284,13 +284,22 @@ textarea {
     display: none;
 }
 
-.history {
+.info-box {
     display: grid;
-    grid-template-rows: 1;
-    grid-template-columns: 2;
+    grid-template-rows: 2em;
+    grid-template-columns: 20px 1fr;
 }
 
 .btn-go-backward {
     margin-right: auto;
+    grid-row: 1 / span 1;
     grid-column: 1 / span 1;
+}
+
+.current-content-text {
+    grid-row: 1 / span 1;
+    grid-column: 2 / span 1;
+
+    margin: auto;
+    font-size: 1.5em;
 }
