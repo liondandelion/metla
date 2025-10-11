@@ -130,9 +130,15 @@ func Sidebar(isAuthenticated bool) g.Node {
 								set :currentURL to url
 							end
 
-							on pushURL
+							on pushURL(id, scrollTop)
 								if no :backwardHistory set :backwardHistory to [] end
+								if no :ids set :ids to [] end
+								if no :scrolls set :scrolls to [] end
+
 								append :currentURL to :backwardHistory
+								append id to :ids
+								append scrollTop to :scrolls
+
 								remove .hidden from #btnGoBackward
 							end
 
@@ -140,12 +146,22 @@ func Sidebar(isAuthenticated bool) g.Node {
 								halt the event's bubbling
 								send cardCollapse to .event-card
 
-								call :backwardHistory.pop() then set @hx-get to the result then call htmx.process(me)
-								send currentPage(url: @hx-get) to me
+								call :backwardHistory.pop() then set @hx-get to the result
+								call :ids.pop() then set :id to it
+								call htmx.process(me)
 
+								send currentPage(url: @hx-get) to me
 								if :backwardHistory is empty add .hidden to me end
 								trigger fetchHistory
 							end
+
+							on shouldCardActivate
+								if :id is not empty
+									send click to #{:id}
+									set :id to ""
+
+									call :scrolls.pop() then set :scroll to it
+									set scrollTop of #sidebar to :scroll
 						`),
 						g.Text("<-"),
 					),
@@ -192,6 +208,7 @@ func EventCard(e mdb.Event, params EventCardParams) g.Node {
 			ghtmx.Get(getFrom), ghtmx.Target("this"), ghtmx.Trigger("click"), ghtmx.Swap("outerHTML"),
 		}
 		hyperscript = Hyperscript(`
+			on load send shouldCardActivate to #btnGoBackward
 			on click send cardCollapse to .event-card then call markersFromNewHide()
 		`)
 		description = nil
@@ -206,7 +223,7 @@ func EventCard(e mdb.Event, params EventCardParams) g.Node {
 				on click
 					halt the event's bubbling
 					send cardCollapse to .event-card
-					send pushURL to #btnGoBackward
+					send pushURL(id: "`+eventID+`", scrollTop: scrollTop of #sidebar) to #btnGoBackward
 			`),
 			g.Text("See links"),
 		)
@@ -326,8 +343,8 @@ func EventNew() g.Node {
 		gh.Details(gh.ID("eventLinksList"), gh.Class("event-links-list"),
 			ghtmx.Get(""), ghtmx.Trigger("fetchEvent2"), ghtmx.Target("this"), ghtmx.Swap("beforeend"),
 			Hyperscript(`
-				on addEventLink
-					set @hx-get to "/user/event/" + event.detail.eventID + "?small" then call htmx.process(me)
+				on addEventLink(eventID)
+					set @hx-get to "/user/event/" + eventID + "?small" then call htmx.process(me)
 					trigger fetchEvent2
 					set @open to ""
 			`),
