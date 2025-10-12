@@ -493,7 +493,7 @@ func EventFormNew() g.Node {
 			`),
 			g.Text("View added links to this event"),
 		),
-		gh.Button(gh.Type("reset"), gh.ID("btnFormEventNewReset"),
+		gh.Button(gh.Type("reset"), gh.ID("btnFormEventNewReset"), gh.Class("dangerous"),
 			g.Text("Clear form"),
 		),
 		gh.Button(gh.Type("submit"),

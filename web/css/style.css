@@ -3,6 +3,8 @@
     --color-btn-hover: lightsteelblue;
     --color-border: dimgray;
     --color-shadow: black;
+    --color-dangerous: #ffcede;
+    --color-dangerous-hover: #dbb0be;
 }
 
 html {
@@ -314,4 +316,12 @@ textarea {
 
     margin: auto;
     font-size: 1.5em;
+}
+
+button.dangerous {
+    background-color: var(--color-dangerous);
+}
+
+button.dangerous:hover {
+    background-color: var(--color-dangerous-hover);
 }
