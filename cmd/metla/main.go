@@ -99,6 +99,8 @@ func main() {
 				r.Method("POST", "/event/new", mhttp.EventNewPost(db))
 				r.Method("GET", "/event/{author}-{id}", mhttp.EventGet(db))
 				r.Method("GET", "/event/{author}-{id}/links", mhttp.EventLinksPageGet(db))
+				r.Method("POST", "/event/search", mhttp.EventSearchPost(db))
+				r.Method("GET", "/event/search", mhttp.EventSearchGet(db))
 			})
 
 			r.Group(func(r chi.Router) {

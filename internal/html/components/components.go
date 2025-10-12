@@ -130,18 +130,17 @@ func Sidebar(isAuthenticated bool) g.Node {
 							if I match .search-closed
 								set my innerHTML to "Close search"
 								remove .search-closed from me then add .search-opened to me
-								send resetHistory to #btnGoBackward
 								send unhide to #formSearch
 							else
 								set my innerHTML to "Search events"
 								remove .search-opened from me then add .search-closed to me
-								send resetHistory to #btnGoBackward
 								send hide to #formSearch
 							end
 					`),
 					g.Text("Search events"),
 				),
 				gh.Form(gh.ID("formSearch"), gh.Class("hidden"),
+					ghtmx.Post("/user/event/search"), ghtmx.Target("#sidebarContent"), ghtmx.Swap("innerHTML"),
 					Hyperscript(`
 						on hide
 							add .hidden to me
@@ -151,12 +150,12 @@ func Sidebar(isAuthenticated bool) g.Node {
 							remove .hidden from me
 						end
 					`),
-					gh.Label(gh.For("term"), g.Text("Search term: ")),
-					gh.Input(gh.Type("text"), gh.Name("term"), gh.ID("term"), gh.Required()),
+					gh.Label(gh.For("websearch"), g.Text("Search for: ")),
+					gh.Input(gh.Type("text"), gh.Name("websearch"), gh.ID("websearch")),
 					gh.Button(gh.Type("submit"),
 						Hyperscript(`
 							on click
-								log "clicked"
+								send pushURL to #btnGoBackward
 						`),
 						g.Text("Search"),
 					),
@@ -171,6 +170,7 @@ func Sidebar(isAuthenticated bool) g.Node {
 						Hyperscript(`
 							on currentPage(url)
 								set :currentURL to url
+								log "currentURL is ", :currentURL
 							end
 
 							on pushURL(id)
@@ -419,7 +419,12 @@ func AnchorEventLoadMore(url string) g.Node {
 
 func EventCardList(events []mdb.Event, url string) g.Node {
 	if len(events) == 0 {
-		return g.Raw("")
+		return gh.Article(
+			Hyperscript(`
+				on load
+					send currentPage(url: "` + url + `" + "&upToPage") to #btnGoBackward
+			`),
+		)
 	}
 
 	isSmall := strings.Contains(url, "&small") || strings.Contains(url, "?small")

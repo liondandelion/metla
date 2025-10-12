@@ -516,9 +516,9 @@ func EventPageGet(db mdb.DB) http.Handler {
 		if !queryParams.Has("page") {
 			events, err = db.UserEventGetAll(data.Username)
 		} else if !queryParams.Has("upToPage") {
-			events, err = db.UserEventGetPageStartingFrom(data.Username, pageSize, page*pageSize)
+			events, err = db.UserEventGetPage(data.Username, pageSize, page)
 		} else {
-			events, err = db.UserEventGetPageStartingFrom(data.Username, pageSize*(page+1), 0)
+			events, err = db.UserEventGetPage(data.Username, pageSize*(page+1), 0)
 		}
 
 		if err != nil {
@@ -565,9 +565,9 @@ func EventLinksPageGet(db mdb.DB) http.Handler {
 		if !queryParams.Has("page") {
 			events, err = db.EventLinksGetAll(eventIDFrom)
 		} else if !queryParams.Has("upToPage") {
-			events, err = db.EventLinksGetPageStartingFrom(eventIDFrom, pageSize, page*pageSize)
+			events, err = db.EventLinksGetPage(eventIDFrom, pageSize, page)
 		} else {
-			events, err = db.EventLinksGetPageStartingFrom(eventIDFrom, pageSize*(page+1), 0)
+			events, err = db.EventLinksGetPage(eventIDFrom, pageSize*(page+1), 0)
 		}
 
 		if err != nil {
@@ -701,6 +701,57 @@ func EventNewPost(db mdb.DB) http.Handler {
 		node := mc.EventCard(event, true)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventNewPost", "failed to render", err, http.StatusInternalServerError}
+		}
+
+		return nil
+	})
+}
+
+func EventSearchPost(db mdb.DB) http.Handler {
+	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
+		r.ParseForm()
+		websearch := r.PostFormValue("websearch")
+
+		url := fmt.Sprintf("/user/event/search?websearch=%v&page=%v&small", websearch, 0)
+		node := mc.AnchorEventLoadMore(url)
+		if err := node.Render(w); err != nil {
+			return &MetlaError{"EventSearchPost", "failed to render", err, http.StatusInternalServerError}
+		}
+		return nil
+	})
+}
+
+func EventSearchGet(db mdb.DB) http.Handler {
+	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
+		queryParams := r.URL.Query()
+		websearch := r.URL.Query().Get("websearch")
+		isSmall := r.URL.Query().Has("small")
+
+		pageSize := 10
+		page, err := strconv.Atoi(queryParams.Get("page"))
+		if err != nil {
+			return &MetlaError{"EventSearchPost", "failed to convert page param to int", err, http.StatusInternalServerError}
+		}
+
+		var events []mdb.Event
+		if !queryParams.Has("upToPage") {
+			events, err = db.EventSearch(websearch, pageSize, page)
+		} else {
+			events, err = db.EventSearch(websearch, pageSize*(page+1), 0)
+		}
+
+		if err != nil {
+			return &MetlaError{"EventSearchPost", "failed to search for events", err, http.StatusInternalServerError}
+		}
+
+		url := fmt.Sprintf("/user/event/search?websearch=%v&page=%v", websearch, page+1)
+		if isSmall {
+			url += "&small"
+		}
+
+		node := mc.EventCardList(events, url)
+		if err := node.Render(w); err != nil {
+			return &MetlaError{"EventSearchPost", "failed to render", err, http.StatusInternalServerError}
 		}
 
 		return nil
