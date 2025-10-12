@@ -275,7 +275,7 @@ func Sidebar(isAuthenticated bool) g.Node {
 	return sidebar
 }
 
-func EventCard(e mdb.Event, isSmall bool, username string, isAuthenticated bool) g.Node {
+func EventCard(us mdb.UserSessionData, e mdb.Event, isSmall bool) g.Node {
 	var class, htmx, title, author, description, time, hyperscript, geojson, btns g.Node
 
 	if e.DatetimeStart == nil {
@@ -369,7 +369,7 @@ func EventCard(e mdb.Event, isSmall bool, username string, isAuthenticated bool)
 				`),
 				g.Text("View links"),
 			),
-			g.If(isAuthenticated, g.Group{
+			g.If(us.IsAuthenticated, g.Group{
 				gh.Button(gh.ID("btnLinkThis"), gh.Class("btn-link-this"),
 					Hyperscript(`
 						init
@@ -405,7 +405,7 @@ func EventCard(e mdb.Event, isSmall bool, username string, isAuthenticated bool)
 					`),
 					g.Text("Remove this link"),
 				),
-				g.If(username == e.Author,
+				g.If(us.Username == e.Author,
 					gh.Button(gh.ID("btnDelete"), gh.Class("dangerous"),
 						Hyperscript(`
 							on click halt the event's bubbling end
@@ -431,7 +431,7 @@ func AnchorEventLoadMore(url string) g.Node {
 	)
 }
 
-func EventCardList(events []mdb.Event, url string, username string, isAuthenticated bool) g.Node {
+func EventCardList(us mdb.UserSessionData, events []mdb.Event, url string) g.Node {
 	if len(events) == 0 {
 		return gh.Article(
 			Hyperscript(`
@@ -444,7 +444,7 @@ func EventCardList(events []mdb.Event, url string, username string, isAuthentica
 	isSmall := strings.Contains(url, "&small") || strings.Contains(url, "?small")
 
 	f := func(e mdb.Event) g.Node {
-		return EventCard(e, isSmall, username, isAuthenticated)
+		return EventCard(us, e, isSmall)
 	}
 
 	return g.Group{
