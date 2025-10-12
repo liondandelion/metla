@@ -288,7 +288,13 @@ func EventCard(e mdb.Event, isSmall bool, isAuthenticated bool) g.Node {
 	}
 
 	title = gh.H1(g.Text(e.Title))
-	author = gh.H2(g.Text(e.Author))
+	author = gh.A(gh.Href("/user/"+e.Author),
+		Hyperscript(`
+			on click
+				halt the event's bubbling
+		`),
+		gh.H2(g.Text(e.Author)),
+	)
 
 	eventID := fmt.Sprintf("%v-%v", e.Author, e.ID)
 	divID := fmt.Sprintf("%v-geojson", eventID)

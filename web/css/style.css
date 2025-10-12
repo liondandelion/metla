@@ -242,6 +242,11 @@ textarea {
     p {
         margin: 0;
     }
+
+    a {
+        width: fit-content;
+        text-decoration: underline;
+    }
 }
 
 .event-card-small {
