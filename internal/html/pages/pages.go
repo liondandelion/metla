@@ -156,20 +156,22 @@ func PasswordChange(userSession mdb.UserSessionData) g.Node {
 	return page(
 		PageProperties{Title: "Change password"},
 		userSession,
-		gh.Form(gh.ID("passwordChangeForm"), ghtmx.Post("/user/password"), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML"),
-			mc.Hyperscript(`
-				on htmx:afterRequest
-					if #otpForm is not empty remove me
-			`),
-			gh.Label(gh.For("password"), g.Text("Old password: ")),
-			gh.Input(gh.Type("password"), gh.Name("oldPassword"), gh.Required()),
-			gh.Label(gh.For("password"), g.Text("New password: ")),
-			gh.Input(gh.Type("password"), gh.Name("newPassword"), gh.Required()),
-			gh.Label(gh.For("confirm"), g.Text("Confirm new password: ")),
-			gh.Input(gh.Type("password"), gh.Name("confirm"), gh.Required()),
-			gh.Button(gh.Type("submit"), g.Text("Change")),
+		g.Group{
+			gh.Form(gh.ID("passwordChangeForm"), ghtmx.Post("/user/password"), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML"),
+				mc.Hyperscript(`
+					on htmx:afterRequest
+						if #otpForm is not empty remove me
+				`),
+				gh.Label(gh.For("password"), g.Text("Old password: ")),
+				gh.Input(gh.Type("password"), gh.Name("oldPassword"), gh.Required()),
+				gh.Label(gh.For("password"), g.Text("New password: ")),
+				gh.Input(gh.Type("password"), gh.Name("newPassword"), gh.Required()),
+				gh.Label(gh.For("confirm"), g.Text("Confirm new password: ")),
+				gh.Input(gh.Type("password"), gh.Name("confirm"), gh.Required()),
+				gh.Button(gh.Type("submit"), g.Text("Change")),
+			),
 			gh.Div(gh.ID("serverResponse")),
-		),
+		},
 	)
 }
 
