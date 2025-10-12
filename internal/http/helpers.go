@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	mdb "github.com/liondandelion/metla/internal/db"
@@ -64,4 +65,14 @@ func LinksStringToEventIDs(links string) ([]mdb.EventID, error) {
 		linkIDs = append(linkIDs, mdb.EventID{ID: id, Author: author})
 	}
 	return linkIDs, nil
+}
+
+func TimeStringToTimeUTC(timeString string) (time.Time, error) {
+	layout := "2006-01-02T15:04"
+	var err error
+	t, err := time.Parse(layout, timeString)
+	if err != nil {
+		return t, err
+	}
+	return t.UTC(), err
 }

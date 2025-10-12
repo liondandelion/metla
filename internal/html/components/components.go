@@ -150,6 +150,13 @@ func Sidebar(isAuthenticated bool) g.Node {
 				`),
 				gh.Label(gh.For("websearch"), g.Text("Search for: ")),
 				gh.Input(gh.Type("text"), gh.Name("websearch"), gh.ID("websearch")),
+				gh.Label(gh.For("searchDtStart"), g.Text("From: ")),
+				gh.Input(gh.Type("datetime-local"), gh.Name("searchDtStart"), gh.ID("searchDtStart")),
+				gh.Label(gh.For("searchDtEnd"), g.Text("To")),
+				gh.Input(gh.Type("datetime-local"), gh.Name("searchDtEnd"), gh.ID("searchDtEnd")),
+				gh.Button(gh.Type("reset"), gh.ID("btnSearchReset"), gh.Class("dangerous"),
+					g.Text("Clear form"),
+				),
 				gh.Button(gh.Type("submit"),
 					Hyperscript(`
 						on click

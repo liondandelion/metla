@@ -311,17 +311,33 @@ func (db DB) EventLinksGetPage(from EventID, pageSize, page int) ([]Event, error
 	return e, err
 }
 
-func (db DB) EventSearch(websearch string, pageSize, page int) ([]Event, error) {
+func (db DB) EventSearch(websearch string, tStart, tEnd time.Time, pageSize, page int) ([]Event, error) {
+	var rows pgx.Rows
+	var err error
+
 	if websearch == "" {
-		rows, err := db.pool.Query(context.Background(),
-			`
-			select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end, created_at at time zone 'utc' as created_at
-			from events
-			order by created_at desc
-			limit $1 offset $2
-			`,
-			pageSize, pageSize*page,
-		)
+		if tStart.Equal(time.Time{}) {
+			rows, err = db.pool.Query(context.Background(),
+				`
+				select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end, created_at at time zone 'utc' as created_at
+				from events
+				order by created_at desc
+				limit $1 offset $2
+				`,
+				pageSize, pageSize*page,
+			)
+		} else {
+			rows, err = db.pool.Query(context.Background(),
+				`
+				select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end, created_at at time zone 'utc' as created_at
+				from events
+				where datetime_start >= $3 and datetime_end <= $4
+				order by created_at desc
+				limit $1 offset $2
+				`,
+				pageSize, pageSize*page, tStart, tEnd,
+			)
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -329,26 +345,52 @@ func (db DB) EventSearch(websearch string, pageSize, page int) ([]Event, error) 
 		return e, err
 	}
 
-	rows, err := db.pool.Query(context.Background(),
-		`
-		select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end, created_at at time zone 'utc' as created_at
-		from events
-		where
-		to_tsvector('english', coalesce(author, '')) || to_tsvector('english', coalesce(title, '')) || to_tsvector('english', coalesce(description, ''))
-		@@ websearch_to_tsquery('english', coalesce($1, '')) = 't'
-		or
-		to_tsvector('russian', coalesce(author, '')) || to_tsvector('russian', coalesce(title, '')) || to_tsvector('russian', coalesce(description, ''))
-		@@ websearch_to_tsquery('russian', coalesce($1, '')) = 't'
-		order by created_at desc
-		limit $2 offset $3
-		`,
-		websearch, pageSize, pageSize*page,
-	)
-	if err != nil {
-		return nil, err
+	if tStart.Equal(time.Time{}) {
+		rows, err = db.pool.Query(context.Background(),
+			`
+			select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end, created_at at time zone 'utc' as created_at
+			from events
+			where
+			to_tsvector('english', coalesce(author, '')) || to_tsvector('english', coalesce(title, '')) || to_tsvector('english', coalesce(description, ''))
+			@@ websearch_to_tsquery('english', coalesce($1, '')) = 't'
+			or
+			to_tsvector('russian', coalesce(author, '')) || to_tsvector('russian', coalesce(title, '')) || to_tsvector('russian', coalesce(description, ''))
+			@@ websearch_to_tsquery('russian', coalesce($1, '')) = 't'
+			order by created_at desc
+			limit $2 offset $3
+			`,
+			websearch, pageSize, pageSize*page,
+		)
+		if err != nil {
+			return nil, err
+		}
+		e, err := pgx.CollectRows(rows, pgx.RowToStructByName[Event])
+		return e, err
+	} else {
+		rows, err = db.pool.Query(context.Background(),
+			`
+			select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end, created_at at time zone 'utc' as created_at
+			from events
+			where
+			(
+			to_tsvector('english', coalesce(author, '')) || to_tsvector('english', coalesce(title, '')) || to_tsvector('english', coalesce(description, ''))
+			@@ websearch_to_tsquery('english', coalesce($1, '')) = 't'
+			or
+			to_tsvector('russian', coalesce(author, '')) || to_tsvector('russian', coalesce(title, '')) || to_tsvector('russian', coalesce(description, ''))
+			@@ websearch_to_tsquery('russian', coalesce($1, '')) = 't'
+			)
+			and datetime_start >= $4 and datetime_end <= $5
+			order by created_at desc
+			limit $2 offset $3
+			`,
+			websearch, pageSize, pageSize*page, tStart, tEnd,
+		)
+		if err != nil {
+			return nil, err
+		}
+		e, err := pgx.CollectRows(rows, pgx.RowToStructByName[Event])
+		return e, err
 	}
-	e, err := pgx.CollectRows(rows, pgx.RowToStructByName[Event])
-	return e, err
 }
 
 func (db DB) UserIsBlocked(username string) (bool, error) {

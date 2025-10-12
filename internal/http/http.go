@@ -9,6 +9,7 @@ import (
 	"image/png"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -678,12 +679,12 @@ func EventPageGet(db mdb.DB) http.Handler {
 			return &MetlaError{"EventPageGet", "failed to retrieve events", err, http.StatusInternalServerError}
 		}
 
-		url := fmt.Sprintf("/events?page=%v", page+1)
+		murl := fmt.Sprintf("/events?page=%v", page+1)
 		if isSmall {
-			url += "&small"
+			murl += "&small"
 		}
 
-		node := mc.EventCardList(events, url, data.IsAuthenticated)
+		node := mc.EventCardList(events, murl, data.IsAuthenticated)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventPageGet", "failed to render", err, http.StatusInternalServerError}
 		}
@@ -727,12 +728,12 @@ func EventLinksPageGet(db mdb.DB) http.Handler {
 			return &MetlaError{"EventLinksPageGet", "failed to retrieve events", err, http.StatusInternalServerError}
 		}
 
-		url := fmt.Sprintf("/event/%v-%v/links?page=%v", eventIDFrom.Author, eventIDFrom.ID, page+1)
+		murl := fmt.Sprintf("/event/%v-%v/links?page=%v", eventIDFrom.Author, eventIDFrom.ID, page+1)
 		if isSmall {
-			url += "&small"
+			murl += "&small"
 		}
 
-		node := mc.EventCardList(events, url, data.IsAuthenticated)
+		node := mc.EventCardList(events, murl, data.IsAuthenticated)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventLinksPageGet", "failed to render", err, http.StatusInternalServerError}
 		}
@@ -806,18 +807,15 @@ func EventNewPost(db mdb.DB) http.Handler {
 
 		var tStart, tEnd time.Time
 		if datetimeStart != "" {
-			layout := "2006-01-02T15:04"
 			var err error
-			tStart, err = time.Parse(layout, datetimeStart)
+			tStart, err = TimeStringToTimeUTC(datetimeStart)
 			if err != nil {
-				return &MetlaError{"EventNewPost", "failed to convert time", err, http.StatusInternalServerError}
+				return &MetlaError{"EventSearchGet", "failed to convert time", err, http.StatusInternalServerError}
 			}
-			tEnd, err = time.Parse(layout, datetimeEnd)
+			tEnd, err = TimeStringToTimeUTC(datetimeEnd)
 			if err != nil {
-				return &MetlaError{"EventNewPost", "failed to convert time", err, http.StatusInternalServerError}
+				return &MetlaError{"EventSearchGet", "failed to convert time", err, http.StatusInternalServerError}
 			}
-			tStart = tStart.UTC()
-			tEnd = tEnd.UTC()
 
 			if tEnd.Before(tStart) {
 				node := mc.EventNewError("serverResponse", "End time should be after start time")
@@ -866,9 +864,12 @@ func EventSearchPost(db mdb.DB) http.Handler {
 	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
 		r.ParseForm()
 		websearch := r.PostFormValue("websearch")
+		dtStart := r.PostFormValue("searchDtStart")
+		dtEnd := r.PostFormValue("searchDtEnd")
 
-		url := fmt.Sprintf("/event/search?websearch=%v&page=%v&small", websearch, 0)
-		node := mc.AnchorEventLoadMore(url)
+		murl := fmt.Sprintf("/event/search?websearch=%v&dtStart=%v&dtEnd=%v&page=%v&small",
+			url.QueryEscape(websearch), url.QueryEscape(dtStart), url.QueryEscape(dtEnd), 0)
+		node := mc.AnchorEventLoadMore(murl)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventSearchPost", "failed to render", err, http.StatusInternalServerError}
 		}
@@ -880,34 +881,66 @@ func EventSearchGet(db mdb.DB) http.Handler {
 	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
 		queryParams := r.URL.Query()
 		websearch := r.URL.Query().Get("websearch")
+		dtStart := r.URL.Query().Get("dtStart")
+		dtEnd := r.URL.Query().Get("dtEnd")
 		isSmall := r.URL.Query().Has("small")
 		data := db.UserSessionDataGet(r.Context())
+
+		if (dtStart == "" && dtEnd != "") || (dtEnd == "" && dtStart != "") {
+			node := mc.EventNewError("serverResponse", "Either specify both times or neither")
+			if err := node.Render(w); err != nil {
+				return &MetlaError{"EventSearchGet", "failed to render", err, http.StatusInternalServerError}
+			}
+			return nil
+		}
 
 		pageSize := 10
 		page, err := strconv.Atoi(queryParams.Get("page"))
 		if err != nil {
-			return &MetlaError{"EventSearchPost", "failed to convert page param to int", err, http.StatusInternalServerError}
+			return &MetlaError{"EventSearchGet", "failed to convert page param to int", err, http.StatusInternalServerError}
+		}
+
+		var tStart, tEnd time.Time
+		if dtStart != "" {
+			var err error
+			tStart, err = TimeStringToTimeUTC(dtStart)
+			if err != nil {
+				return &MetlaError{"EventSearchGet", "failed to convert time", err, http.StatusInternalServerError}
+			}
+			tEnd, err = TimeStringToTimeUTC(dtEnd)
+			if err != nil {
+				return &MetlaError{"EventSearchGet", "failed to convert time", err, http.StatusInternalServerError}
+			}
+
+			if tEnd.Before(tStart) {
+				node := mc.EventNewError("serverResponse", "End time should be after start time")
+				if err := node.Render(w); err != nil {
+					return &MetlaError{"EventSearchGet", "failed to render", err, http.StatusInternalServerError}
+				}
+				return nil
+			}
 		}
 
 		var events []mdb.Event
 		if !queryParams.Has("upToPage") {
-			events, err = db.EventSearch(websearch, pageSize, page)
+			events, err = db.EventSearch(websearch, tStart, tEnd, pageSize, page)
 		} else {
-			events, err = db.EventSearch(websearch, pageSize*(page+1), 0)
+			events, err = db.EventSearch(websearch, tStart, tEnd, pageSize*(page+1), 0)
 		}
 
 		if err != nil {
-			return &MetlaError{"EventSearchPost", "failed to search for events", err, http.StatusInternalServerError}
+			return &MetlaError{"EventSearchGet", "failed to search for events", err, http.StatusInternalServerError}
 		}
 
-		url := fmt.Sprintf("/event/search?websearch=%v&page=%v", websearch, page+1)
+		murl := fmt.Sprintf("/event/search?websearch=%v&dtStart=%v&dtEnd=%v&page=%v",
+			url.QueryEscape(websearch), url.QueryEscape(dtStart), url.QueryEscape(dtEnd), page+1)
 		if isSmall {
-			url += "&small"
+			murl += "&small"
 		}
 
-		node := mc.EventCardList(events, url, data.IsAuthenticated)
+		node := mc.EventCardList(events, murl, data.IsAuthenticated)
 		if err := node.Render(w); err != nil {
-			return &MetlaError{"EventSearchPost", "failed to render", err, http.StatusInternalServerError}
+			return &MetlaError{"EventSearchGet", "failed to render", err, http.StatusInternalServerError}
 		}
 
 		return nil
