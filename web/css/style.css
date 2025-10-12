@@ -320,7 +320,9 @@ textarea {
     grid-template-columns: min-content 1fr;
 
     p {
-        position: absolute;
+        position: relative;
+        left: -22px;
+        margin: 0;
     }
 }
 
