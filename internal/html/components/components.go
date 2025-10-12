@@ -411,7 +411,7 @@ func EventCard(us mdb.UserSessionData, e mdb.Event, isSmall bool) g.Node {
 							on click halt the event's bubbling end
 						`),
 						ghtmx.Delete("/event/"+eventID), ghtmx.Target("#"+eventID), ghtmx.Swap("delete"), ghtmx.Confirm("Are you sure?"),
-						g.Text("Remove this link"),
+						g.Text("Remove this event"),
 					),
 				),
 			}),
