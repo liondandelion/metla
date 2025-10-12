@@ -94,7 +94,7 @@ button:active,
 .button-like:active {
     box-shadow: 0 0 0 0 var(--color-shadow);
     transform: translate(4px, 4px);
-    transition: box-shadow 1ms, transform 10ms;
+    transition: box-shadow 1ms linear, transform 10ms linear;
 }
 
 textarea {
@@ -255,7 +255,7 @@ textarea {
     overflow-wrap: anywhere;
     overflow-y: auto;
     max-height: 300px;
-    transition: max-height 500ms;
+    transition: max-height 500ms linear, background-color 500ms linear;
 
     h1, h2 {
         margin: 0;

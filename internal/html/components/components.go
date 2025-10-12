@@ -183,18 +183,20 @@ func Sidebar(isAuthenticated bool) g.Node {
 			gh.Div(gh.ID("sidebarContent"), gh.Class("sidebar-content"),
 				Hyperscript(`
 					on activateContent
-						add .sidebar-content to me
-						remove .hidden from me
-						add .hidden to #sidebarContentLinks
-						remove .sidebar-content from #sidebarContentLinks
-						send cardCollapse to .event-card
-						if #btnEventLinksView is not empty then send reset to #btnEventLinksView end
-						send unhide to #btnGoBackward
-						set innerHTML of #currentContentText to "Timeline"
+						if I do not match .sidebar-content
+							add .sidebar-content to me
+							remove .hidden from me
+							add .hidden to #sidebarContentLinks
+							remove .sidebar-content from #sidebarContentLinks
+							send cardCollapse to .event-card
+							if #btnEventLinksView is not empty then send reset to #btnEventLinksView end
+							send unhide to #btnGoBackward
+							set innerHTML of #currentContentText to "Timeline"
+						end
 				`),
 				AnchorEventLoadMore(0),
 			),
-			gh.Div(gh.ID("sidebarContentLinks"), gh.Class("sidebar-content hidden"),
+			gh.Div(gh.ID("sidebarContentLinks"), gh.Class("hidden"),
 				ghtmx.Trigger("fetchEvent2"), ghtmx.Swap("beforeend"),
 				Hyperscript(`
 					on addEventLink(eventID)
@@ -204,13 +206,14 @@ func Sidebar(isAuthenticated bool) g.Node {
 					end
 
 					on activateContent
-						add .sidebar-content to me
-						remove .hidden from me
-						add .hidden to #sidebarContent
-						remove .sidebar-content from #sidebarContent
-						send cardCollapse to .event-card
-						send hide to #btnGoBackward
-						set innerHTML of #currentContentText to "Linked events"
+						if I do not match .sidebar-content
+							add .sidebar-content to me
+							remove .hidden from me
+							add .hidden to #sidebarContent
+							remove .sidebar-content from #sidebarContent
+							send cardCollapse to .event-card
+							send hide to #btnGoBackward
+							set innerHTML of #currentContentText to "Linked events"
 				`),
 			),
 		)
