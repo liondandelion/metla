@@ -57,6 +57,7 @@ function onMouseLeftMap() {
         mapState.markerFollowsMouse = null;
         mapState.clickPlacesMarker = false;
     }
+    mapState.clickRemovesMarker = false;
 }
 
 function onZoom(e) {
