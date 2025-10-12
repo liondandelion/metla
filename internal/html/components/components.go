@@ -49,6 +49,14 @@ func Navbar(username string, isAuthenticated, isAdmin bool) g.Node {
 				gh.Li(
 					gh.A(gh.Class("button-like"), gh.Href("/"), g.Text("Metla")),
 				),
+				gh.Li(
+					gh.Button(gh.Class("sidebar-toggle"),
+						Hyperscript(`
+							on click toggle .sidebar-hidden on #mapDiv
+						`),
+						g.Text("Menu"),
+					),
+				),
 			),
 			gh.Ul(gh.Class("navbar-right-side"),
 				g.If(isAuthenticated,

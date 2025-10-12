@@ -121,21 +121,21 @@ textarea {
     grid-template-columns: 1fr min-content;
 }
 
-.navbar-left-side {
-    display: grid;
-    align-items: center;
-    margin: 0 auto 0 10px;
-    padding: 0;
-    gap: 10px;
-}
-
+.navbar-left-side,
 .navbar-right-side {
     display: grid;
     grid-auto-flow: column;
     align-items: center;
-    margin: 0 10px 0 auto;
     padding: 0;
     gap: 10px;
+}
+
+.navbar-left-side {
+    margin: 0 auto 0 10px;
+}
+
+.navbar-right-side {
+    margin: 0 10px 0 auto;
 }
 
 .otp-enable {
@@ -350,4 +350,25 @@ textarea {
     align-items: center;
     justify-items: center;
     overflow: auto;
+}
+
+.sidebar-toggle {
+    display: none;
+}
+
+.sidebar-hidden {
+}
+
+@media (max-width: 768px) {
+    .sidebar-toggle {
+        display: initial;
+    }
+
+    .map-div {
+        grid-template-columns: 1fr 0;
+    }
+
+    .sidebar-hidden {
+        grid-template-columns: 0 1fr;
+    }
 }

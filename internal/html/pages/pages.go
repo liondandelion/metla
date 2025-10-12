@@ -45,7 +45,7 @@ func Map(userSession mdb.UserSessionData) g.Node {
 		gh.Script(gh.Src("/assets/js/third_party/maplibre-gl.js")),
 		gh.Script(gh.Src("/assets/js/third_party/pmtiles.js")),
 		gh.Link(gh.Rel("stylesheet"), gh.Type("text/css"), gh.Href("/assets/css/third_party/maplibre-gl.css")),
-		gh.Div(gh.Class("map-div"),
+		gh.Div(gh.ID("mapDiv"), gh.Class("map-div sidebar-hidden"),
 			mc.Sidebar(userSession.IsAuthenticated),
 			gh.Div(gh.ID("map"), gh.Class("map"),
 				mc.Hyperscript(`
