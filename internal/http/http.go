@@ -617,7 +617,7 @@ func EventGet(db mdb.DB) http.Handler {
 
 func EventNewGet(db mdb.DB) http.Handler {
 	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
-		node := mc.EventNew()
+		node := mc.EventFormNew()
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventNewGet", "failed to render", err, http.StatusInternalServerError}
 		}
@@ -681,6 +681,7 @@ func EventNewPost(db mdb.DB) http.Handler {
 			GeoJSON:       geojson,
 			DatetimeStart: &tStart,
 			DatetimeEnd:   &tEnd,
+			CreatedAt:     time.Now().UTC(),
 		}
 
 		if event.DatetimeStart.Equal(time.Time{}) {

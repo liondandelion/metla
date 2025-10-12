@@ -30,6 +30,7 @@ create table if not exists events
     geojson jsonb not null,
     datetime_start timestamptz null,
     datetime_end timestamptz null,
+    created_at timestamptz not null,
     primary key (id, author)
 );
 
