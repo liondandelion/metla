@@ -172,6 +172,14 @@ func (db DB) EventGet(id EventID) (Event, error) {
 	return e, err
 }
 
+func (db DB) EventDelete(id EventID) error {
+	_, err := db.pool.Exec(context.Background(),
+		"delete from events where author = $1 and id = $2",
+		id.Author, id.ID,
+	)
+	return err
+}
+
 func (db DB) EventGetPage(username string, pageSize, page int) ([]Event, error) {
 	rows, err := db.pool.Query(context.Background(),
 		`

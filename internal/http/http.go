@@ -684,7 +684,7 @@ func EventPageGet(db mdb.DB) http.Handler {
 			murl += "&small"
 		}
 
-		node := mc.EventCardList(events, murl, data.IsAuthenticated)
+		node := mc.EventCardList(events, murl, data.Username, data.IsAuthenticated)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventPageGet", "failed to render", err, http.StatusInternalServerError}
 		}
@@ -733,7 +733,7 @@ func EventLinksPageGet(db mdb.DB) http.Handler {
 			murl += "&small"
 		}
 
-		node := mc.EventCardList(events, murl, data.IsAuthenticated)
+		node := mc.EventCardList(events, murl, data.Username, data.IsAuthenticated)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventLinksPageGet", "failed to render", err, http.StatusInternalServerError}
 		}
@@ -760,10 +760,34 @@ func EventGet(db mdb.DB) http.Handler {
 			return &MetlaError{"EventGet", "failed to retrieve event from db", err, http.StatusInternalServerError}
 		}
 
-		node := mc.EventCard(event, isSmall, data.IsAuthenticated)
+		node := mc.EventCard(event, isSmall, data.Username, data.IsAuthenticated)
 
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventGet", "failed to render", err, http.StatusInternalServerError}
+		}
+
+		return nil
+	})
+}
+
+func EventDelete(db mdb.DB) http.Handler {
+	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
+		idString := chi.URLParam(r, "id")
+		author := chi.URLParam(r, "author")
+		data := db.UserSessionDataGet(r.Context())
+
+		if author != data.Username {
+			return &MetlaError{"EventDelete", "forbidden to delete this event", nil, http.StatusForbidden}
+		}
+
+		id, err := strconv.ParseInt(idString, 10, 64)
+		if err != nil {
+			return &MetlaError{"EventDelete", "failed to convert id param to int", err, http.StatusInternalServerError}
+		}
+
+		err = db.EventDelete(mdb.EventID{ID: id, Author: author})
+		if err != nil {
+			return &MetlaError{"EventDelete", "failed to delete event from db", err, http.StatusInternalServerError}
 		}
 
 		return nil
@@ -851,7 +875,7 @@ func EventNewPost(db mdb.DB) http.Handler {
 			return &MetlaError{"EventNewPost", "failed to insert event links into the db", err, http.StatusInternalServerError}
 		}
 
-		node := mc.EventCard(event, true, data.IsAuthenticated)
+		node := mc.EventCard(event, true, data.Username, data.IsAuthenticated)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventNewPost", "failed to render", err, http.StatusInternalServerError}
 		}
@@ -938,7 +962,7 @@ func EventSearchGet(db mdb.DB) http.Handler {
 			murl += "&small"
 		}
 
-		node := mc.EventCardList(events, murl, data.IsAuthenticated)
+		node := mc.EventCardList(events, murl, data.Username, data.IsAuthenticated)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventSearchGet", "failed to render", err, http.StatusInternalServerError}
 		}
