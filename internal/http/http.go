@@ -175,6 +175,17 @@ func LoginPost(db mdb.DB) http.Handler {
 			return nil
 		}
 
+		data.IsBlocked, err = db.UserIsBlocked(username)
+		if err != nil {
+			return &MetlaError{"User", "failed to query db to check if user is blocked", err, http.StatusInternalServerError}
+		}
+
+		if data.IsBlocked {
+			db.UserSessionDataSet(data, r.Context())
+			db.UserTokenRenew(r.Context())
+			return &MetlaError{"Login", "user is blocked", nil, http.StatusForbidden}
+		}
+
 		passwordHash, err := db.UserPasswordHashGet(username)
 		if err != nil {
 			return &MetlaError{"LoginPost", "failed to query or scan db", err, http.StatusInternalServerError}
@@ -294,7 +305,12 @@ func User(db mdb.DB) http.Handler {
 			return &MetlaError{"User", "failed to query db to check if user is follower", err, http.StatusInternalServerError}
 		}
 
-		node := mpages.User(data, username, isFollower)
+		isBlocked, err := db.UserIsBlocked(username)
+		if err != nil {
+			return &MetlaError{"User", "failed to query db to check if user is blocked", err, http.StatusInternalServerError}
+		}
+
+		node := mpages.User(data, username, isFollower, isBlocked)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"User", "failed to render", err, http.StatusInternalServerError}
 		}
@@ -357,6 +373,64 @@ func UserUnfollow(db mdb.DB) http.Handler {
 		)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"UserUnfollow", "failed to render", err, http.StatusInternalServerError}
+		}
+		return nil
+	})
+}
+
+func UserBlock(db mdb.DB) http.Handler {
+	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
+		username := chi.URLParam(r, "username")
+
+		exists, err := db.UserExists(username)
+		if err != nil {
+			return &MetlaError{"UserBlock", "failed to query db for user existence", err, http.StatusInternalServerError}
+		}
+
+		if !exists {
+			return &MetlaError{"UserBlock", "this user does not exist", err, http.StatusNotFound}
+		}
+
+		err = db.UserBlock(username)
+		if err != nil {
+			return &MetlaError{"UserBlock", "failed to block user", err, http.StatusInternalServerError}
+		}
+
+		node := gh.Button(gh.Class("dangerous"),
+			ghtmx.Post("/user/"+username+"/unblock"), ghtmx.Swap("outerHTML"),
+			g.Text("Unblock this user"),
+		)
+		if err := node.Render(w); err != nil {
+			return &MetlaError{"UserBlock", "failed to render", err, http.StatusInternalServerError}
+		}
+		return nil
+	})
+}
+
+func UserUnblock(db mdb.DB) http.Handler {
+	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
+		username := chi.URLParam(r, "username")
+
+		exists, err := db.UserExists(username)
+		if err != nil {
+			return &MetlaError{"UserUnblock", "failed to query db for user existence", err, http.StatusInternalServerError}
+		}
+
+		if !exists {
+			return &MetlaError{"UserUnblock", "this user does not exist", err, http.StatusNotFound}
+		}
+
+		err = db.UserUnblock(username)
+		if err != nil {
+			return &MetlaError{"UserUnblock", "failed to block user", err, http.StatusInternalServerError}
+		}
+
+		node := gh.Button(gh.Class("dangerous"),
+			ghtmx.Post("/user/"+username+"/block"), ghtmx.Swap("outerHTML"),
+			g.Text("Block this user"),
+		)
+		if err := node.Render(w); err != nil {
+			return &MetlaError{"UserUnblock", "failed to render", err, http.StatusInternalServerError}
 		}
 		return nil
 	})

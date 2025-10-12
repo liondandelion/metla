@@ -61,6 +61,16 @@ func EnsureUserExists(db db.DB) func(next http.Handler) http.Handler {
 				return nil
 			}
 
+			data.IsBlocked, err = db.UserIsBlocked(data.Username)
+			if err != nil {
+				return &mhttp.MetlaError{Where: "EnsureUserExists", What: "failed to query or scan db", Err: err, Status: http.StatusInternalServerError}
+			}
+
+			if data.IsBlocked {
+				mhttp.Logout(db).ServeHTTP(w, r)
+				return nil
+			}
+
 			data.IsAdmin, err = db.UserIsAdmin(data.Username)
 			if err != nil {
 				return &mhttp.MetlaError{Where: "EnsureUserExists", What: "failed to query or scan db", Err: err, Status: http.StatusInternalServerError}

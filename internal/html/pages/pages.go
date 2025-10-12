@@ -98,7 +98,7 @@ func Login(userSession mdb.UserSessionData) g.Node {
 	)
 }
 
-func User(userSession mdb.UserSessionData, username string, isFollower bool) g.Node {
+func User(userSession mdb.UserSessionData, username string, isFollower bool, isBlocked bool) g.Node {
 	var actionList, otp g.Node
 	if userSession.Username == username {
 		if userSession.IsOTPEnabled {
@@ -132,9 +132,28 @@ func User(userSession mdb.UserSessionData, username string, isFollower bool) g.N
 		}
 
 		actionList = g.Group{
-			gh.Li(
-				btnFollow,
-			),
+			gh.Li(btnFollow),
+		}
+
+		if userSession.IsAdmin {
+			var btnBlock g.Node
+
+			if !isBlocked {
+				btnBlock = gh.Button(gh.Class("dangerous"),
+					ghtmx.Post("/user/"+username+"/block"), ghtmx.Swap("outerHTML"),
+					g.Text("Block this user"),
+				)
+			} else {
+				btnBlock = gh.Button(gh.Class("dangerous"),
+					ghtmx.Post("/user/"+username+"/unblock"), ghtmx.Swap("outerHTML"),
+					g.Text("Unblock this user"),
+				)
+			}
+
+			actionList = g.Group{
+				actionList,
+				gh.Li(btnBlock),
+			}
 		}
 	}
 

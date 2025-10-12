@@ -109,6 +109,8 @@ func main() {
 				r.Use(mware.Admin(db))
 
 				r.Method("GET", "/userstable", mhttp.UserTable(db))
+				r.Method("POST", "/user/{username}/block", mhttp.UserBlock(db))
+				r.Method("POST", "/user/{username}/unblock", mhttp.UserUnblock(db))
 			})
 		})
 	})

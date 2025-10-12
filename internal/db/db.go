@@ -16,14 +16,18 @@ type DB struct {
 }
 
 type UserSessionData struct {
-	Username                               string
-	IsAuthenticated, IsAdmin, IsOTPEnabled bool
+	Username        string
+	IsAuthenticated bool
+	IsAdmin         bool
+	IsOTPEnabled    bool
+	IsBlocked       bool
 }
 
 type User struct {
 	Username     string
 	PasswordHash []byte
 	IsAdmin      bool
+	IsBlocked    bool
 }
 
 type Event struct {
@@ -345,4 +349,26 @@ func (db DB) EventSearch(websearch string, pageSize, page int) ([]Event, error) 
 	}
 	e, err := pgx.CollectRows(rows, pgx.RowToStructByName[Event])
 	return e, err
+}
+
+func (db DB) UserIsBlocked(username string) (bool, error) {
+	var isBlocked bool
+	err := db.pool.QueryRow(context.Background(), "select is_blocked from users where username = $1", username).Scan(&isBlocked)
+	return isBlocked, err
+}
+
+func (db DB) UserBlock(username string) error {
+	_, err := db.pool.Exec(context.Background(),
+		"update users set is_blocked = 't' where username = $1",
+		username,
+	)
+	return err
+}
+
+func (db DB) UserUnblock(username string) error {
+	_, err := db.pool.Exec(context.Background(),
+		"update users set is_blocked = 'f' where username = $1",
+		username,
+	)
+	return err
 }

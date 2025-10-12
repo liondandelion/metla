@@ -2,7 +2,8 @@ create table if not exists users
 (
     username text primary key,
     password_hash bytea not null,
-    is_admin bool not null
+    is_admin bool not null,
+    is_blocked bool not null default 'f'
 );
 
 create table if not exists sessions
