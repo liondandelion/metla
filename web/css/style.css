@@ -65,6 +65,10 @@ a {
     color: black;
 }
 
+.inline-block {
+    display: inline-block;
+}
+
 .maplibregl-ctrl-attrib-inner a {
     display: inline-block;
 }
