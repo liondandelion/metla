@@ -75,9 +75,9 @@ func Register(userSession mdb.UserSessionData) g.Node {
 				gh.Label(gh.For("confirm"), g.Text("Confirm password: ")),
 				gh.Input(gh.Type("password"), gh.Name("confirm"), gh.Required()),
 				gh.Button(gh.Type("submit"), g.Text("Register")),
-				),
+			),
 			gh.Div(gh.ID("serverResponse")),
-		}
+		},
 	)
 }
 
@@ -96,9 +96,9 @@ func Login(userSession mdb.UserSessionData) g.Node {
 				gh.Label(gh.For("passowrd"), g.Text("Enter your password: ")),
 				gh.Input(gh.Type("password"), gh.Name("password"), gh.Required()),
 				gh.Button(gh.Type("submit"), g.Text("Login")),
-				),
+			),
 			gh.Div(gh.ID("serverResponse")),
-		}
+		},
 	)
 }
 
