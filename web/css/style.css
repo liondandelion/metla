@@ -215,6 +215,7 @@ textarea {
 .event-card-small,
 .event-card {
     display: grid;
+    grid-auto-rows: min-content;
     gap: 10px;
     padding: 10px;
 
@@ -247,10 +248,6 @@ textarea {
 
 .event-card-small:hover {
     background-color: rgba(230, 230, 250, 0.5);
-}
-
-.event-card-small:active {
-    box-shadow: 0 4px 4px 0 inset var(--color-shadow);
 }
 
 .event-card {
