@@ -170,7 +170,7 @@ func Sidebar(isAuthenticated bool) g.Node {
 				gh.P(gh.ID("currentContentText"), gh.Class("current-content-text"),
 					g.Text("Timeline"),
 				),
-				gh.Button(gh.ID("btnGoBackward"), gh.Class("btn-go-backward hidden"),
+				gh.Button(gh.ID("btnGoBackward"), gh.Class("btn-go-backward vis-hidden"),
 					ghtmx.Trigger("fetchHistory"), ghtmx.Target(".sidebar-content"), ghtmx.Swap("innerHTML"),
 					Hyperscript(`
 						on currentPage(url)
@@ -184,7 +184,7 @@ func Sidebar(isAuthenticated bool) g.Node {
 							append :currentURL to :backwardHistory
 							append id to :ids
 
-							remove .hidden from me
+							remove .vis-hidden from me
 						end
 
 						on click
@@ -196,7 +196,7 @@ func Sidebar(isAuthenticated bool) g.Node {
 							call htmx.process(me)
 
 							send currentPage(url: @hx-get) to me
-							if :backwardHistory is empty add .hidden to me end
+							if :backwardHistory is empty add .vis-hidden to me end
 							trigger fetchHistory
 						end
 
@@ -208,8 +208,8 @@ func Sidebar(isAuthenticated bool) g.Node {
 							end
 						end
 
-						on hide add .hidden to me end
-						on unhide if :backwardHistory is not empty then remove .hidden from me end
+						on hide add .vis-hidden to me end
+						on unhide if :backwardHistory is not empty then remove .vis-hidden from me end
 
 						on resetHistory
 							set :backwardHistory to []
