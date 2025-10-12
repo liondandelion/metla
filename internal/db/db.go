@@ -233,6 +233,10 @@ func (db DB) EventLinkInsert(from, to EventID) error {
 }
 
 func (db DB) EventLinksInsert(from EventID, to []EventID) error {
+	if len(to) == 0 {
+		return nil
+	}
+
 	for _, t := range to {
 		err := db.EventLinkInsert(from, t)
 		if err != nil {

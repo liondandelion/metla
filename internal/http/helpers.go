@@ -47,7 +47,11 @@ func HTMXRedirect(w http.ResponseWriter, path string) {
 func LinksStringToEventIDs(links string) ([]mdb.EventID, error) {
 	var linkIDs []mdb.EventID
 	trimmed := strings.TrimRightFunc(links, unicode.IsSpace)
+	if trimmed == "" {
+		return linkIDs, nil
+	}
 	linkStrings := strings.Split(trimmed, " ")
+
 	for _, linkString := range linkStrings {
 		ls := strings.Split(linkString, "-")
 		author := ls[0]
