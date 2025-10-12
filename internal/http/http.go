@@ -17,6 +17,10 @@ import (
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 
+	g "maragu.dev/gomponents"
+	ghtmx "maragu.dev/gomponents-htmx"
+	gh "maragu.dev/gomponents/html"
+
 	mdb "github.com/liondandelion/metla/internal/db"
 	mc "github.com/liondandelion/metla/internal/html/components"
 	mpages "github.com/liondandelion/metla/internal/html/pages"
@@ -273,11 +277,86 @@ func UserTable(db mdb.DB) http.Handler {
 
 func User(db mdb.DB) http.Handler {
 	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
+		username := chi.URLParam(r, "username")
 		data := db.UserSessionDataGet(r.Context())
 
-		node := mpages.User(data)
+		exists, err := db.UserExists(username)
+		if err != nil {
+			return &MetlaError{"User", "failed to query db for user existence", err, http.StatusInternalServerError}
+		}
+
+		if !exists {
+			return &MetlaError{"User", "this user does not exist", err, http.StatusNotFound}
+		}
+
+		isFollower, err := db.UserIsFollower(username, data.Username)
+		if err != nil {
+			return &MetlaError{"User", "failed to query db to check if user is follower", err, http.StatusInternalServerError}
+		}
+
+		node := mpages.User(data, username, isFollower)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"User", "failed to render", err, http.StatusInternalServerError}
+		}
+		return nil
+	})
+}
+
+func UserFollow(db mdb.DB) http.Handler {
+	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
+		followee := chi.URLParam(r, "username")
+		data := db.UserSessionDataGet(r.Context())
+
+		exists, err := db.UserExists(followee)
+		if err != nil {
+			return &MetlaError{"UserFollow", "failed to query db for user existence", err, http.StatusInternalServerError}
+		}
+
+		if !exists {
+			return &MetlaError{"UserFollow", "this user does not exist", err, http.StatusNotFound}
+		}
+
+		err = db.UserFollowerInsert(followee, data.Username)
+		if err != nil {
+			return &MetlaError{"UserFollow", "failed to insert follower", err, http.StatusInternalServerError}
+		}
+
+		node := gh.Button(
+			ghtmx.Post("/user/"+followee+"/unfollow"), ghtmx.Swap("outerHTML"),
+			g.Text("Unfollow this user"),
+		)
+		if err := node.Render(w); err != nil {
+			return &MetlaError{"UserFollow", "failed to render", err, http.StatusInternalServerError}
+		}
+		return nil
+	})
+}
+
+func UserUnfollow(db mdb.DB) http.Handler {
+	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
+		followee := chi.URLParam(r, "username")
+		data := db.UserSessionDataGet(r.Context())
+
+		exists, err := db.UserExists(followee)
+		if err != nil {
+			return &MetlaError{"UserUnfollow", "failed to query db for user existence", err, http.StatusInternalServerError}
+		}
+
+		if !exists {
+			return &MetlaError{"UserUnfollow", "this user does not exist", err, http.StatusNotFound}
+		}
+
+		err = db.UserFollowerDelete(followee, data.Username)
+		if err != nil {
+			return &MetlaError{"UserUnfollow", "failed to insert follower", err, http.StatusInternalServerError}
+		}
+
+		node := gh.Button(
+			ghtmx.Post("/user/"+followee+"/follow"), ghtmx.Swap("outerHTML"),
+			g.Text("Follow this user"),
+		)
+		if err := node.Render(w); err != nil {
+			return &MetlaError{"UserUnfollow", "failed to render", err, http.StatusInternalServerError}
 		}
 		return nil
 	})
@@ -514,23 +593,23 @@ func EventPageGet(db mdb.DB) http.Handler {
 
 		var events []mdb.Event
 		if !queryParams.Has("page") {
-			events, err = db.UserEventGetAll(data.Username)
+			events, err = db.EventGetAll(data.Username)
 		} else if !queryParams.Has("upToPage") {
-			events, err = db.UserEventGetPage(data.Username, pageSize, page)
+			events, err = db.EventGetPage(data.Username, pageSize, page)
 		} else {
-			events, err = db.UserEventGetPage(data.Username, pageSize*(page+1), 0)
+			events, err = db.EventGetPage(data.Username, pageSize*(page+1), 0)
 		}
 
 		if err != nil {
 			return &MetlaError{"EventPageGet", "failed to retrieve events", err, http.StatusInternalServerError}
 		}
 
-		url := fmt.Sprintf("/user/events?page=%v", page+1)
+		url := fmt.Sprintf("/events?page=%v", page+1)
 		if isSmall {
 			url += "&small"
 		}
 
-		node := mc.EventCardList(events, url)
+		node := mc.EventCardList(events, url, data.IsAuthenticated)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventPageGet", "failed to render", err, http.StatusInternalServerError}
 		}
@@ -544,7 +623,7 @@ func EventLinksPageGet(db mdb.DB) http.Handler {
 		idString := chi.URLParam(r, "id")
 		author := chi.URLParam(r, "author")
 		queryParams := r.URL.Query()
-		// data := db.UserSessionDataGet(r.Context())
+		data := db.UserSessionDataGet(r.Context())
 
 		id, err := strconv.ParseInt(idString, 10, 64)
 		if err != nil {
@@ -574,12 +653,12 @@ func EventLinksPageGet(db mdb.DB) http.Handler {
 			return &MetlaError{"EventLinksPageGet", "failed to retrieve events", err, http.StatusInternalServerError}
 		}
 
-		url := fmt.Sprintf("/user/event/%v-%v/links?page=%v", eventIDFrom.Author, eventIDFrom.ID, page+1)
+		url := fmt.Sprintf("/event/%v-%v/links?page=%v", eventIDFrom.Author, eventIDFrom.ID, page+1)
 		if isSmall {
 			url += "&small"
 		}
 
-		node := mc.EventCardList(events, url)
+		node := mc.EventCardList(events, url, data.IsAuthenticated)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventLinksPageGet", "failed to render", err, http.StatusInternalServerError}
 		}
@@ -592,6 +671,7 @@ func EventGet(db mdb.DB) http.Handler {
 	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
 		idString := chi.URLParam(r, "id")
 		author := chi.URLParam(r, "author")
+		data := db.UserSessionDataGet(r.Context())
 
 		isSmall := r.URL.Query().Has("small")
 
@@ -605,7 +685,7 @@ func EventGet(db mdb.DB) http.Handler {
 			return &MetlaError{"EventGet", "failed to retrieve event from db", err, http.StatusInternalServerError}
 		}
 
-		node := mc.EventCard(event, isSmall)
+		node := mc.EventCard(event, isSmall, data.IsAuthenticated)
 
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventGet", "failed to render", err, http.StatusInternalServerError}
@@ -699,7 +779,7 @@ func EventNewPost(db mdb.DB) http.Handler {
 			return &MetlaError{"EventNewPost", "failed to insert event links into the db", err, http.StatusInternalServerError}
 		}
 
-		node := mc.EventCard(event, true)
+		node := mc.EventCard(event, true, data.IsAuthenticated)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventNewPost", "failed to render", err, http.StatusInternalServerError}
 		}
@@ -713,7 +793,7 @@ func EventSearchPost(db mdb.DB) http.Handler {
 		r.ParseForm()
 		websearch := r.PostFormValue("websearch")
 
-		url := fmt.Sprintf("/user/event/search?websearch=%v&page=%v&small", websearch, 0)
+		url := fmt.Sprintf("/event/search?websearch=%v&page=%v&small", websearch, 0)
 		node := mc.AnchorEventLoadMore(url)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventSearchPost", "failed to render", err, http.StatusInternalServerError}
@@ -727,6 +807,7 @@ func EventSearchGet(db mdb.DB) http.Handler {
 		queryParams := r.URL.Query()
 		websearch := r.URL.Query().Get("websearch")
 		isSmall := r.URL.Query().Has("small")
+		data := db.UserSessionDataGet(r.Context())
 
 		pageSize := 10
 		page, err := strconv.Atoi(queryParams.Get("page"))
@@ -745,12 +826,12 @@ func EventSearchGet(db mdb.DB) http.Handler {
 			return &MetlaError{"EventSearchPost", "failed to search for events", err, http.StatusInternalServerError}
 		}
 
-		url := fmt.Sprintf("/user/event/search?websearch=%v&page=%v", websearch, page+1)
+		url := fmt.Sprintf("/event/search?websearch=%v&page=%v", websearch, page+1)
 		if isSmall {
 			url += "&small"
 		}
 
-		node := mc.EventCardList(events, url)
+		node := mc.EventCardList(events, url, data.IsAuthenticated)
 		if err := node.Render(w); err != nil {
 			return &MetlaError{"EventSearchPost", "failed to render", err, http.StatusInternalServerError}
 		}

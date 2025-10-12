@@ -168,12 +168,17 @@ func (db DB) EventGet(id EventID) (Event, error) {
 	return e, err
 }
 
-func (db DB) UserEventGetPage(username string, pageSize, page int) ([]Event, error) {
+func (db DB) EventGetPage(username string, pageSize, page int) ([]Event, error) {
 	rows, err := db.pool.Query(context.Background(),
 		`
 		select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end, created_at at time zone 'utc' as created_at
 		from events
-		where author = $1
+		where author = $1 or author in
+		(
+			select followee
+			from followers
+			where follower = $1
+		)
 		order by created_at desc limit $2 offset $3`,
 		username, pageSize, pageSize*page,
 	)
@@ -184,7 +189,7 @@ func (db DB) UserEventGetPage(username string, pageSize, page int) ([]Event, err
 	return e, err
 }
 
-func (db DB) UserEventGetAll(username string) ([]Event, error) {
+func (db DB) EventGetAll(username string) ([]Event, error) {
 	rows, err := db.pool.Query(context.Background(),
 		`select id, author, title, description, geojson, datetime_start at time zone 'utc' as datetime_start, datetime_end at time zone 'utc' as datetime_end, created_at at time zone 'utc' as created_at
 		from events where author = $1`,
@@ -203,6 +208,28 @@ func (db DB) UserFollowerInsert(followee, follower string) error {
 		followee, follower,
 	)
 	return err
+}
+
+func (db DB) UserFollowerDelete(followee, follower string) error {
+	_, err := db.pool.Exec(context.Background(),
+		`
+		delete
+		from followers
+		where followee = $1 and follower = $2
+		`,
+		followee, follower,
+	)
+	return err
+}
+
+func (db DB) UserIsFollower(followee, follower string) (bool, error) {
+	var exists bool
+	err := db.pool.QueryRow(context.Background(),
+		`
+		select exists (select 1 from followers where followee = $1 and follower = $2)
+		`,
+		followee, follower).Scan(&exists)
+	return exists, err
 }
 
 func (db DB) UserFollowersGet(username string) ([]string, error) {

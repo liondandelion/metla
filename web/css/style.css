@@ -89,6 +89,7 @@ button:not(.maplibregl-ctrl-zoom-in, .maplibregl-ctrl-zoom-out),
     box-shadow: 4px 4px 0 0 var(--color-shadow);
     background-color: var(--color-btn);
     padding: 5px;
+    font-size: 1em;
 }
 
 button:hover,
@@ -101,6 +102,14 @@ button:active,
     box-shadow: 0 0 0 0 var(--color-shadow);
     transform: translate(4px, 4px);
     transition: box-shadow 1ms linear, transform 10ms linear;
+}
+
+button.dangerous {
+    background-color: var(--color-dangerous);
+}
+
+button.dangerous:hover {
+    background-color: var(--color-dangerous-hover);
 }
 
 textarea {
@@ -282,6 +291,7 @@ textarea {
         padding: 0;
         gap: 10px;
         justify-items: center;
+        margin: 0;
     }
 }
 
@@ -318,10 +328,12 @@ textarea {
     font-size: 1.5em;
 }
 
-button.dangerous {
-    background-color: var(--color-dangerous);
-}
-
-button.dangerous:hover {
-    background-color: var(--color-dangerous-hover);
+.user-page {
+    display: grid;
+    grid-row: 1 / span 1;
+    grid-column: 1 / span 1;
+    grid-auto-rows: min-content;
+    align-items: center;
+    justify-items: center;
+    overflow: auto;
 }

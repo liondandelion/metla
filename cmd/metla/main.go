@@ -78,13 +78,23 @@ func main() {
 		r.Method("GET", "/register", mhttp.Register(db))
 		r.Method("POST", "/register", mhttp.RegisterPost(db))
 
+		r.Method("GET", "/events", mhttp.EventPageGet(db))
+		r.Method("GET", "/event/new", mhttp.EventNewGet(db))
+		r.Method("POST", "/event/new", mhttp.EventNewPost(db))
+		r.Method("GET", "/event/{author}-{id}", mhttp.EventGet(db))
+		r.Method("GET", "/event/{author}-{id}/links", mhttp.EventLinksPageGet(db))
+		r.Method("POST", "/event/search", mhttp.EventSearchPost(db))
+		r.Method("GET", "/event/search", mhttp.EventSearchGet(db))
+
 		r.Group(func(r chi.Router) {
 			r.Use(mware.Auth(db))
 
 			r.Method("GET", "/logout", mhttp.Logout(db))
 
 			r.Route("/user", func(r chi.Router) {
-				r.Method("GET", "/", mhttp.User(db))
+				r.Method("GET", "/{username}", mhttp.User(db))
+				r.Method("POST", "/{username}/follow", mhttp.UserFollow(db))
+				r.Method("POST", "/{username}/unfollow", mhttp.UserUnfollow(db))
 				r.Method("GET", "/password", mhttp.PasswordChange(db))
 				r.Method("POST", "/password", mhttp.PasswordChangePost(db))
 				r.Method("POST", "/password/otp", mhttp.PasswordChangeOTP(db, ghGCM))
@@ -93,14 +103,6 @@ func main() {
 				r.Method("POST", "/otp/enable", mhttp.OTPEnablePost(db, ghGCM))
 				r.Method("GET", "/otp/disable", mhttp.OTPDisable(db, ghGCM))
 				r.Method("POST", "/otp/disable", mhttp.OTPDisable(db, ghGCM))
-
-				r.Method("GET", "/events", mhttp.EventPageGet(db))
-				r.Method("GET", "/event/new", mhttp.EventNewGet(db))
-				r.Method("POST", "/event/new", mhttp.EventNewPost(db))
-				r.Method("GET", "/event/{author}-{id}", mhttp.EventGet(db))
-				r.Method("GET", "/event/{author}-{id}/links", mhttp.EventLinksPageGet(db))
-				r.Method("POST", "/event/search", mhttp.EventSearchPost(db))
-				r.Method("GET", "/event/search", mhttp.EventSearchGet(db))
 			})
 
 			r.Group(func(r chi.Router) {

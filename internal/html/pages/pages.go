@@ -98,28 +98,54 @@ func Login(userSession mdb.UserSessionData) g.Node {
 	)
 }
 
-func User(userSession mdb.UserSessionData) g.Node {
+func User(userSession mdb.UserSessionData, username string, isFollower bool) g.Node {
+	var actionList, otp g.Node
+	if userSession.Username == username {
+		if userSession.IsOTPEnabled {
+			otp = gh.Li(
+				gh.A(gh.Class("button-like"), gh.Href("/user/otp/disable"), g.Text("Disable OTP")),
+			)
+		} else {
+			otp = gh.Li(
+				gh.A(gh.Class("button-like"), gh.Href("/user/otp/enable"), g.Text("Enable OTP")),
+			)
+		}
+
+		actionList = g.Group{
+			gh.Li(
+				gh.A(gh.Class("button-like"), gh.Href("/user/password"), g.Text("Change password")),
+			),
+			otp,
+		}
+	} else {
+		var btnFollow g.Node
+		if !isFollower {
+			btnFollow = gh.Button(
+				ghtmx.Post("/user/"+username+"/follow"), ghtmx.Swap("outerHTML"),
+				g.Text("Follow this user"),
+			)
+		} else {
+			btnFollow = gh.Button(
+				ghtmx.Post("/user/"+username+"/unfollow"), ghtmx.Swap("outerHTML"),
+				g.Text("Unfollow this user"),
+			)
+		}
+
+		actionList = g.Group{
+			gh.Li(
+				btnFollow,
+			),
+		}
+	}
+
 	return page(
-		PageProperties{Title: "User"},
+		PageProperties{Title: username},
 		userSession,
-		gh.Nav(gh.Class("user-profile"),
-			gh.Ul(
-				g.If(userSession.IsAuthenticated,
-					g.Group{
-						gh.Li(
-							gh.A(gh.Class("button-like"), gh.Href("/user/password"), g.Text("Change password")),
-						),
-						g.If(userSession.IsOTPEnabled,
-							gh.Li(
-								gh.A(gh.Class("button-like"), gh.Href("/user/otp/disable"), g.Text("Disable OTP")),
-							),
-						),
-						g.If(!userSession.IsOTPEnabled,
-							gh.Li(
-								gh.A(gh.Class("button-like"), gh.Href("/user/otp/enable"), g.Text("Enable OTP")),
-							),
-						),
-					},
+		gh.Section(gh.Class("user-page"),
+			gh.H1(g.Text(username)),
+			gh.Nav(gh.Class("user-profile"),
+				gh.Ul(
+					actionList,
 				),
 			),
 		),
