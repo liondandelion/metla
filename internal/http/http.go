@@ -474,15 +474,6 @@ func PasswordChangePost(db mdb.DB) http.Handler {
 		newPassword := []byte(r.PostFormValue("newPassword"))
 		confirm := []byte(r.PostFormValue("confirm"))
 
-		isValid := PasswordIsValid(r.PostFormValue("password"))
-		if !isValid {
-			node := mc.Error("serverResponse", "Password should be at least 4 characters long")
-			if err := node.Render(w); err != nil {
-				return &MetlaError{"PasswordChangePost", "failed to render", err, http.StatusInternalServerError}
-			}
-			return nil
-		}
-
 		data := db.UserSessionDataGet(r.Context())
 		oldPasswordHashDB, err := db.UserPasswordHashGet(data.Username)
 		if err != nil {
@@ -500,6 +491,15 @@ func PasswordChangePost(db mdb.DB) http.Handler {
 
 		if !bytes.Equal(newPassword, confirm) {
 			node := mc.Error("serverResponse", "New passwords should match")
+			if err := node.Render(w); err != nil {
+				return &MetlaError{"PasswordChangePost", "failed to render", err, http.StatusInternalServerError}
+			}
+			return nil
+		}
+
+		isValid := PasswordIsValid(r.PostFormValue("newPassword"))
+		if !isValid {
+			node := mc.Error("serverResponse", "New password should be at least 4 characters long")
 			if err := node.Render(w); err != nil {
 				return &MetlaError{"PasswordChangePost", "failed to render", err, http.StatusInternalServerError}
 			}
