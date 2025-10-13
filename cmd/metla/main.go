@@ -79,7 +79,6 @@ func main() {
 		r.Method("POST", "/register", mhttp.RegisterPost(db))
 
 		r.Method("GET", "/events", mhttp.EventPageGet(db))
-		r.Method("GET", "/event/new", mhttp.EventNewGet(db))
 		r.Method("POST", "/event/new", mhttp.EventNewPost(db))
 		r.Method("GET", "/event/{author}-{id}", mhttp.EventGet(db))
 		r.Method("DELETE", "/event/{author}-{id}", mhttp.EventDelete(db))

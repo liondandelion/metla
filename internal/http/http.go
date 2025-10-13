@@ -802,17 +802,6 @@ func EventDelete(db mdb.DB) http.Handler {
 	})
 }
 
-func EventNewGet(db mdb.DB) http.Handler {
-	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
-		node := mc.EventFormNew()
-		if err := node.Render(w); err != nil {
-			return &MetlaError{"EventNewGet", "failed to render", err, http.StatusInternalServerError}
-		}
-
-		return nil
-	})
-}
-
 func EventNewPost(db mdb.DB) http.Handler {
 	return MetlaHandler(func(w http.ResponseWriter, r *http.Request) *MetlaError {
 		r.ParseForm()
