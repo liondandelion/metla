@@ -455,7 +455,7 @@ func EventCardList(us mdb.UserSessionData, events []mdb.Event, url string) g.Nod
 					send currentPage(url: "` + url + `" + "&upToPage") to #btnGoBackward
 			`),
 		)
-		if strings.Contains(url, "page=0") {
+		if strings.Contains(url, "page=0") && strings.Contains(url, "links") {
 			node = g.Group{
 				node,
 				gh.P(gh.Class("no-links-text"), g.Text("No links from this event")),
