@@ -831,11 +831,11 @@ func EventNewPost(db mdb.DB) http.Handler {
 			var err error
 			tStart, err = TimeStringToTimeUTC(datetimeStart)
 			if err != nil {
-				return &MetlaError{"EventSearchGet", "failed to convert time", err, http.StatusInternalServerError}
+				return &MetlaError{"EventNewPost", "failed to convert time", err, http.StatusInternalServerError}
 			}
 			tEnd, err = TimeStringToTimeUTC(datetimeEnd)
 			if err != nil {
-				return &MetlaError{"EventSearchGet", "failed to convert time", err, http.StatusInternalServerError}
+				return &MetlaError{"EventNewPost", "failed to convert time", err, http.StatusInternalServerError}
 			}
 
 			if tEnd.Before(tStart) {
