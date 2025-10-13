@@ -12,12 +12,13 @@ func Auth(db db.DB) func(next http.Handler) http.Handler {
 		return mhttp.MetlaHandler(func(w http.ResponseWriter, r *http.Request) *mhttp.MetlaError {
 			data := db.UserSessionDataGet(r.Context())
 
+			w.Header().Add("Cache-Control", "no-store")
+
 			if !data.IsAuthenticated {
 				http.Redirect(w, r, "/login", http.StatusSeeOther)
 				return nil
 			}
 
-			w.Header().Add("Cache-Control", "no-store")
 			next.ServeHTTP(w, r)
 			return nil
 		})
@@ -83,6 +84,20 @@ func EnsureUserExists(db db.DB) func(next http.Handler) http.Handler {
 
 			db.UserSessionDataSet(data, r.Context())
 
+			next.ServeHTTP(w, r)
+			return nil
+		})
+	}
+}
+
+func SecureHeaders(db db.DB) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return mhttp.MetlaHandler(func(w http.ResponseWriter, r *http.Request) *mhttp.MetlaError {
+
+			w.Header().Add("Content-Security-Policy", "default-src 'self'")
+			w.Header().Add("X-Frame-Options", "DENY")
+			w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
+			w.Header().Add("X-Content-Type-Options", "nosniff")
 			next.ServeHTTP(w, r)
 			return nil
 		})

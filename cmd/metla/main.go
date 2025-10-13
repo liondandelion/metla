@@ -43,6 +43,7 @@ func main() {
 	sessionManager := scs.New()
 	sessionManager.Store = pgxstore.New(dbPool)
 	sessionManager.Lifetime = 12 * time.Hour
+	sessionManager.Cookie.Secure = true
 
 	db := mdb.Create(dbPool, sessionManager)
 
