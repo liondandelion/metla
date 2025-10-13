@@ -94,7 +94,7 @@ func SecureHeaders() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return mhttp.MetlaHandler(func(w http.ResponseWriter, r *http.Request) *mhttp.MetlaError {
 
-			w.Header().Add("Content-Security-Policy", "default-src 'self'")
+			w.Header().Add("Content-Security-Policy", "default-src 'self'; img-src 'self' data:; style-src 'self' 'sha256-bsV5JivYxvGywDAZ22EZJKBFip65Ng9xoJVLbBg7bdo='; script-src 'self'; child-src 'self' blob:; form-action 'self'; frame-ancestors 'none'")
 			w.Header().Add("X-Frame-Options", "DENY")
 			w.Header().Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload")
 			w.Header().Add("X-Content-Type-Options", "nosniff")
