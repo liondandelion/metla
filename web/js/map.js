@@ -92,6 +92,10 @@ function geoJSONStringToEventMarkers(stringJSON, color = "#3FB1CE") {
             .addTo(map);
         mapState.markersFromEvent.push(marker);
     });
+
+    if (mapState.markersFromEvent.length !== 0) {
+        map.setCenter(mapState.markersFromEvent[0].getLngLat());
+    }
 }
 
 var map = new maplibregl.Map({
