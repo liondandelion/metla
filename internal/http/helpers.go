@@ -76,3 +76,22 @@ func TimeStringToTimeUTC(timeString string) (time.Time, error) {
 	}
 	return t.UTC(), err
 }
+
+func UsernameIsValid(username string) bool {
+	trimmed := strings.TrimRightFunc(username, unicode.IsSpace)
+	if trimmed == "" {
+		return false
+	}
+	for _, r := range trimmed {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
+			if r != '-' && r != '_' {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func PasswordIsValid(password string) bool {
+	return len(password) >= 4
+}

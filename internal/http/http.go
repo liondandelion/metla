@@ -100,6 +100,24 @@ func RegisterPost(db mdb.DB) http.Handler {
 		password := []byte(r.PostFormValue("password"))
 		confirm := []byte(r.PostFormValue("confirm"))
 
+		isValid := UsernameIsValid(username)
+		if !isValid {
+			node := mc.Error("serverResponse", "Username should contain only unicode letters, numbers, '-' and '_'")
+			if err := node.Render(w); err != nil {
+				return &MetlaError{"RegisterPost", "failed to render", err, http.StatusInternalServerError}
+			}
+			return nil
+		}
+
+		isValid = PasswordIsValid(r.PostFormValue("password"))
+		if !isValid {
+			node := mc.Error("serverResponse", "Password should be at least 4 characters long")
+			if err := node.Render(w); err != nil {
+				return &MetlaError{"RegisterPost", "failed to render", err, http.StatusInternalServerError}
+			}
+			return nil
+		}
+
 		exists, _ := db.UserExists(username)
 		if exists {
 			node := mc.Error("serverResponse", "This user already exists")
