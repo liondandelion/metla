@@ -63,6 +63,7 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Use(mware.SecureHeaders())
 
 	assetsDir := http.Dir(assetsDirPath)
 	mhttp.FileServer(r, "/assets", assetsDir)
@@ -70,7 +71,6 @@ func main() {
 	r.Group(func(r chi.Router) {
 		r.Use(sessionManager.LoadAndSave)
 		r.Use(mware.EnsureUserExists(db))
-		r.Use(mware.SecureHeaders())
 
 		r.Method("GET", "/", mhttp.Map(db))
 		r.Method("GET", "/login", mhttp.Login(db))
