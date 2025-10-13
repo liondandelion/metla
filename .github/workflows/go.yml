@@ -42,4 +42,6 @@ jobs:
         username: ${{ secrets.USERNAME }}
         key: ${{ secrets.KEY }}
         port: ${{ secrets.PORT }}
-        script: just metla/deploy
+        script: |
+          export PATH=$PATH:/usr/local/go/bin:$HOME/go/bin
+          just metla/deploy
