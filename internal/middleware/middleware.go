@@ -11,7 +11,6 @@ func Auth(db db.DB) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return mhttp.MetlaHandler(func(w http.ResponseWriter, r *http.Request) *mhttp.MetlaError {
 			data := db.UserSessionDataGet(r.Context())
-
 			w.Header().Add("Cache-Control", "no-store")
 
 			if !data.IsAuthenticated {
@@ -29,12 +28,12 @@ func Admin(db db.DB) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return mhttp.MetlaHandler(func(w http.ResponseWriter, r *http.Request) *mhttp.MetlaError {
 			data := db.UserSessionDataGet(r.Context())
+			w.Header().Add("Cache-Control", "no-store")
 
 			if !data.IsAdmin {
 				return &mhttp.MetlaError{Where: "Admin", What: "Access denied", Err: nil, Status: http.StatusForbidden}
 			}
 
-			w.Header().Add("Cache-Control", "no-store")
 			next.ServeHTTP(w, r)
 			return nil
 		})
