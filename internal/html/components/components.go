@@ -62,7 +62,7 @@ func Navbar(username string, isAuthenticated, isAdmin bool) g.Node {
 				g.If(isAuthenticated,
 					g.Group{
 						gh.Li(
-							gh.A(gh.Class("button-like"), gh.Href("/user/"+username), g.Text(username)),
+							gh.A(gh.Class("button-like"), gh.Href("/user/"+username), g.Text("Profile")),
 						),
 						g.If(isAdmin,
 							gh.Li(
