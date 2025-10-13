@@ -116,5 +116,5 @@ func main() {
 		})
 	})
 
-	http.ListenAndServe(":3001", r)
+	http.ListenAndServe("127.0.0.1:3001", r)
 }
