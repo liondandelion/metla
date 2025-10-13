@@ -784,7 +784,7 @@ func EventDelete(db mdb.DB) http.Handler {
 		author := chi.URLParam(r, "author")
 		data := db.UserSessionDataGet(r.Context())
 
-		if author != data.Username {
+		if (author != data.Username) && !data.IsAdmin {
 			return &MetlaError{"EventDelete", "forbidden to delete this event", nil, http.StatusForbidden}
 		}
 

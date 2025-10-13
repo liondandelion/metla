@@ -421,7 +421,7 @@ func EventCard(us mdb.UserSessionData, e mdb.Event, isSmall bool) g.Node {
 					`),
 					g.Text("Remove this link"),
 				),
-				g.If(us.Username == e.Author,
+				g.If(us.Username == e.Author || us.IsAdmin,
 					gh.Button(gh.ID("btnDelete"), gh.Class("dangerous"),
 						Hyperscript(`
 							on click halt the event's bubbling end
