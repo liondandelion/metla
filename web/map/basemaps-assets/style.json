@@ -12267,6 +12267,6 @@
       }
     }
   ],
-  "glyphs": "https://metlasite.duckdns.org/assets/map/basemaps-assets/fonts/{fontstack}/{range}.pbf",
-  "sprite": "https://metlasite.duckdns.org/assets/map/basemaps-assets/sprites/v4/light"
+  "glyphs": "https://metla.site/assets/map/basemaps-assets/fonts/{fontstack}/{range}.pbf",
+  "sprite": "https://metla.site/assets/map/basemaps-assets/sprites/v4/light"
 }
