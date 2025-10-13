@@ -84,7 +84,7 @@ func UsernameIsValid(username string) bool {
 	}
 	for _, r := range trimmed {
 		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
-			if r != '-' && r != '_' {
+			if r != '_' {
 				return false
 			}
 		}
