@@ -81,3 +81,8 @@ populate-misc:
     rm ./misc/osmosis.tar
 
     git clone git@github.com:protomaps/basemaps.git
+
+deploy:
+    git pull origin main
+    just build
+    systemctl --user restart metla.service
