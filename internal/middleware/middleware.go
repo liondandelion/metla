@@ -90,7 +90,7 @@ func EnsureUserExists(db db.DB) func(next http.Handler) http.Handler {
 	}
 }
 
-func SecureHeaders(db db.DB) func(next http.Handler) http.Handler {
+func SecureHeaders() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return mhttp.MetlaHandler(func(w http.ResponseWriter, r *http.Request) *mhttp.MetlaError {
 

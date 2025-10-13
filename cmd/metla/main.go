@@ -70,6 +70,7 @@ func main() {
 	r.Group(func(r chi.Router) {
 		r.Use(sessionManager.LoadAndSave)
 		r.Use(mware.EnsureUserExists(db))
+		r.Use(mware.SecureHeaders())
 
 		r.Method("GET", "/", mhttp.Map(db))
 		r.Method("GET", "/login", mhttp.Login(db))
