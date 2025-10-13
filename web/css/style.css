@@ -273,7 +273,7 @@ textarea {
     overflow-wrap: anywhere;
     overflow-y: auto;
     max-height: 300px;
-    transition: max-height 500ms linear, background-color 500ms linear;
+    transition: max-height 250ms linear, background-color 250ms linear;
 
     h1, h2 {
         margin: 0;
@@ -353,6 +353,12 @@ textarea {
     align-items: center;
     justify-items: center;
     overflow: auto;
+}
+
+.no-links-text {
+    margin: 0;
+    align-self: center;
+    justify-self: center;
 }
 
 .sidebar-toggle {

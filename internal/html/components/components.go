@@ -359,6 +359,14 @@ func EventCard(us mdb.UserSessionData, e mdb.Event, isSmall bool) g.Node {
 		geojson = gh.Div(gh.ID(divID), g.Attr("data-geojson", e.GeoJSON))
 
 		btns = g.Group{
+			gh.Button(gh.ID("btnViewOnMap"), gh.Class("sidebar-toggle"),
+				Hyperscript(`
+					on click
+						halt the event's bubbling
+						toggle .sidebar-hidden on #mapDiv
+				`),
+				g.Text("View on map"),
+			),
 			gh.Button(gh.ID("btnLinksView"),
 				ghtmx.Get(fmt.Sprintf("/event/%v-%v/links?page=%v&small", e.Author, e.ID, 0)),
 				ghtmx.Trigger("fetchContent"), ghtmx.Target(".sidebar-content"), ghtmx.Swap("innerHTML"),
@@ -441,12 +449,19 @@ func AnchorEventLoadMore(url string) g.Node {
 
 func EventCardList(us mdb.UserSessionData, events []mdb.Event, url string) g.Node {
 	if len(events) == 0 {
-		return gh.Article(
+		node := gh.Article(
 			Hyperscript(`
 				on load
 					send currentPage(url: "` + url + `" + "&upToPage") to #btnGoBackward
 			`),
 		)
+		if strings.Contains(url, "page=0") {
+			node = g.Group{
+				node,
+				gh.P(gh.Class("no-links-text"), g.Text("No links from this event")),
+			}
+		}
+		return node
 	}
 
 	isSmall := strings.Contains(url, "&small") || strings.Contains(url, "?small")
@@ -490,6 +505,7 @@ func EventFormNew() g.Node {
 					halt the event's bubbling
 					call markerPlace()
 					send cardCollapse to .event-card
+					toggle .sidebar-hidden on #mapDiv
 			`),
 			g.Text("Add marker"),
 		),
@@ -499,6 +515,7 @@ func EventFormNew() g.Node {
 					halt the event's bubbling
 					call markerRemove()
 					send cardCollapse to .event-card
+					toggle .sidebar-hidden on #mapDiv
 			`),
 			g.Text("Remove marker"),
 		),

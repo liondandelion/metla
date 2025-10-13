@@ -679,7 +679,11 @@ func EventPageGet(db mdb.DB) http.Handler {
 			return &MetlaError{"EventPageGet", "failed to retrieve events", err, http.StatusInternalServerError}
 		}
 
-		murl := fmt.Sprintf("/events?page=%v", page+1)
+		if len(events) != 0 {
+			page += 1
+		}
+
+		murl := fmt.Sprintf("/events?page=%v", page)
 		if isSmall {
 			murl += "&small"
 		}
@@ -728,7 +732,11 @@ func EventLinksPageGet(db mdb.DB) http.Handler {
 			return &MetlaError{"EventLinksPageGet", "failed to retrieve events", err, http.StatusInternalServerError}
 		}
 
-		murl := fmt.Sprintf("/event/%v-%v/links?page=%v", eventIDFrom.Author, eventIDFrom.ID, page+1)
+		if len(events) != 0 {
+			page += 1
+		}
+
+		murl := fmt.Sprintf("/event/%v-%v/links?page=%v", eventIDFrom.Author, eventIDFrom.ID, page)
 		if isSmall {
 			murl += "&small"
 		}
@@ -956,8 +964,12 @@ func EventSearchGet(db mdb.DB) http.Handler {
 			return &MetlaError{"EventSearchGet", "failed to search for events", err, http.StatusInternalServerError}
 		}
 
+		if len(events) != 0 {
+			page += 1
+		}
+
 		murl := fmt.Sprintf("/event/search?websearch=%v&dtStart=%v&dtEnd=%v&page=%v",
-			url.QueryEscape(websearch), url.QueryEscape(dtStart), url.QueryEscape(dtEnd), page+1)
+			url.QueryEscape(websearch), url.QueryEscape(dtStart), url.QueryEscape(dtEnd), page)
 		if isSmall {
 			murl += "&small"
 		}

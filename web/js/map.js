@@ -142,6 +142,8 @@ map.on("click", (e) => {
         2,
     );
 
+    const mapDiv = document.getElementById("mapDiv");
+    const delay = 200;
     const lngLat = e.lngLat;
 
     if (mapState.clickPlacesMarker) {
@@ -154,6 +156,9 @@ map.on("click", (e) => {
                 mapState.markersFromNew = mapState.markersFromNew.filter(m => m !== marker);
                 marker.remove();
                 mapState.clickRemovesMarker = false;
+                setTimeout(() => {
+                    mapDiv.classList.toggle("sidebar-hidden");
+                }, delay);
             }
         });
 
@@ -164,6 +169,9 @@ map.on("click", (e) => {
             mapState.markerFollowsMouse.remove()
             mapState.markerFollowsMouse = null;
         }
+        setTimeout(() => {
+            mapDiv.classList.toggle("sidebar-hidden");
+        }, delay);
     }
 });
 
