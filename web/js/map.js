@@ -142,7 +142,7 @@ map.on("click", (e) => {
         2,
     );
 
-    const mapDiv = document.getElementById("mapDiv");
+    const mapPage = document.getElementById("mapPage");
     const delay = 200;
     const lngLat = e.lngLat;
 
@@ -157,7 +157,7 @@ map.on("click", (e) => {
                 marker.remove();
                 mapState.clickRemovesMarker = false;
                 setTimeout(() => {
-                    mapDiv.classList.toggle("sidebar-hidden");
+                    mapPage.classList.toggle("sidebar-hidden");
                 }, delay);
             }
         });
@@ -170,7 +170,7 @@ map.on("click", (e) => {
             mapState.markerFollowsMouse = null;
         }
         setTimeout(() => {
-            mapDiv.classList.toggle("sidebar-hidden");
+            mapPage.classList.toggle("sidebar-hidden");
         }, delay);
     }
 });

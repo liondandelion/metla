@@ -45,7 +45,7 @@ func Map(userSession mdb.UserSessionData) g.Node {
 		gh.Script(gh.Src("/assets/js/third_party/maplibre-gl.js")),
 		gh.Script(gh.Src("/assets/js/third_party/pmtiles.js")),
 		gh.Link(gh.Rel("stylesheet"), gh.Type("text/css"), gh.Href("/assets/css/third_party/maplibre-gl.css")),
-		gh.Div(gh.ID("mapDiv"), gh.Class("map-div sidebar-hidden"),
+		gh.Section(gh.ID("mapPage"), gh.Class("map-div sidebar-hidden"),
 			mc.Sidebar(userSession.IsAuthenticated),
 			gh.Div(gh.ID("map"), gh.Class("map"),
 				mc.Hyperscript(`
@@ -66,7 +66,7 @@ func Register(userSession mdb.UserSessionData) g.Node {
 	return page(
 		PageProperties{Title: "Register"},
 		userSession,
-		g.Group{
+		gh.Section(gh.ID("registerPage"), gh.Class("page"),
 			gh.Form(gh.ID("registerForm"), ghtmx.Post("/register"), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML"),
 				gh.Label(gh.For("username"), g.Text("Enter your username: ")),
 				gh.Input(gh.Type("text"), gh.Name("username"), gh.Required()),
@@ -77,7 +77,7 @@ func Register(userSession mdb.UserSessionData) g.Node {
 				gh.Button(gh.Type("submit"), g.Text("Register")),
 			),
 			gh.Div(gh.ID("serverResponse")),
-		},
+		),
 	)
 }
 
@@ -85,7 +85,7 @@ func Login(userSession mdb.UserSessionData) g.Node {
 	return page(
 		PageProperties{Title: "Login"},
 		userSession,
-		g.Group{
+		gh.Section(gh.ID("loginPage"), gh.Class("page"),
 			gh.Form(gh.ID("loginForm"), ghtmx.Post("/login"), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML"),
 				mc.Hyperscript(`
 					on htmx:afterRequest
@@ -98,7 +98,7 @@ func Login(userSession mdb.UserSessionData) g.Node {
 				gh.Button(gh.Type("submit"), g.Text("Login")),
 			),
 			gh.Div(gh.ID("serverResponse")),
-		},
+		),
 	)
 }
 
@@ -164,7 +164,7 @@ func User(userSession mdb.UserSessionData, username string, isFollower bool, isB
 	return page(
 		PageProperties{Title: username},
 		userSession,
-		gh.Section(gh.Class("user-page"),
+		gh.Section(gh.ID("userPage"), gh.Class("page"),
 			gh.H1(g.Text(username)),
 			gh.Nav(gh.Class("user-profile"),
 				gh.Ul(
@@ -179,7 +179,7 @@ func PasswordChange(userSession mdb.UserSessionData) g.Node {
 	return page(
 		PageProperties{Title: "Change password"},
 		userSession,
-		g.Group{
+		gh.Section(gh.ID("passwordChangePage"), gh.Class("page"),
 			gh.Form(gh.ID("passwordChangeForm"), ghtmx.Post("/user/password"), ghtmx.Target("#serverResponse"), ghtmx.Swap("outerHTML"),
 				mc.Hyperscript(`
 					on htmx:afterRequest
@@ -194,7 +194,7 @@ func PasswordChange(userSession mdb.UserSessionData) g.Node {
 				gh.Button(gh.Type("submit"), g.Text("Change")),
 			),
 			gh.Div(gh.ID("serverResponse")),
-		},
+		),
 	)
 }
 

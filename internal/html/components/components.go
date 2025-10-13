@@ -52,7 +52,7 @@ func Navbar(username string, isAuthenticated, isAdmin bool) g.Node {
 				gh.Li(
 					gh.Button(gh.Class("sidebar-toggle"),
 						Hyperscript(`
-							on click toggle .sidebar-hidden on #mapDiv
+							on click toggle .sidebar-hidden on #mapPage
 						`),
 						g.Text("Menu"),
 					),
@@ -363,7 +363,7 @@ func EventCard(us mdb.UserSessionData, e mdb.Event, isSmall bool) g.Node {
 				Hyperscript(`
 					on click
 						halt the event's bubbling
-						toggle .sidebar-hidden on #mapDiv
+						toggle .sidebar-hidden on #mapPage
 				`),
 				g.Text("View on map"),
 			),
@@ -505,7 +505,7 @@ func EventFormNew() g.Node {
 					halt the event's bubbling
 					call markerPlace()
 					send cardCollapse to .event-card
-					toggle .sidebar-hidden on #mapDiv
+					toggle .sidebar-hidden on #mapPage
 			`),
 			g.Text("Add marker"),
 		),
@@ -515,7 +515,7 @@ func EventFormNew() g.Node {
 					halt the event's bubbling
 					call markerRemove()
 					send cardCollapse to .event-card
-					toggle .sidebar-hidden on #mapDiv
+					toggle .sidebar-hidden on #mapPage
 			`),
 			g.Text("Remove marker"),
 		),
