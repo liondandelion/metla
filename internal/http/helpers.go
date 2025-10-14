@@ -78,11 +78,11 @@ func TimeStringToTimeUTC(timeString string) (time.Time, error) {
 }
 
 func UsernameIsValid(username string) bool {
-	trimmed := strings.TrimRightFunc(username, unicode.IsSpace)
-	if trimmed == "" {
+	if len(username) == 0 {
 		return false
 	}
-	for _, r := range trimmed {
+
+	for _, r := range username {
 		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
 			if r != '_' {
 				return false
