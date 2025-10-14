@@ -1,0 +1,535 @@
+openapi: 3.1.0
+info:
+  title: Description of metla.site API
+  description: |
+    This is purely HTML API without any JSON exchanges.
+    Separete JSON-based API may be coming in the future.
+  version: 0.0.1
+servers:
+  - url: https://metla.site
+paths:
+  /:
+    get:
+      summary: Get main page
+      description: Gets the main page with the map and everything
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+
+  /login:
+    get:
+      summary: Get login page
+      description: ""
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "303":
+          description: Redirect already authenticated user
+        "500":
+          $ref: "#/components/responses/internalError"
+
+    post:
+      summary: Logs the user in
+      description: ""
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "403":
+          description: User is blocked
+          content:
+            text/html: {}
+        "500":
+          $ref: "#/components/responses/internalError"
+
+  /login/otp:
+    post:
+      summary: Validates user's OTP code
+      description: ""
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                otpCode:
+                  type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+          description: OK
+
+  /register:
+    get:
+      summary: Get register page
+      description: ""
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+
+    post:
+      summary: Registers user
+      description: ""
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                confirm:
+                  type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+
+  /events:
+    get:
+      summary: Get all the events for the current user
+      description: ""
+      parameters:
+        - $ref: "#/components/parameters/small"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/upToPage"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+
+  /event/new:
+    post:
+      summary: Creates new event
+      description: ""
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                datetimeStart:
+                  type: string
+                datetimeEnd:
+                  type: string
+                geojson:
+                  type: string
+                links:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+
+  /event/{author}-{id}:
+    get:
+      summary: Retrieves event
+      description: ""
+      parameters:
+        - $ref: "#/components/parameters/author"
+        - $ref: "#/components/parameters/id"
+        - $ref: "#/components/parameters/small"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+
+    delete:
+      summary: Deletes event
+      description: ""
+      parameters:
+        - $ref: "#/components/parameters/author"
+        - $ref: "#/components/parameters/id"
+        - $ref: "#/components/parameters/sessionCookie"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+        "403":
+          description: You are not author or admin
+          content:
+            text/html: {}
+
+  /event/{author}-{id}/links:
+    get:
+      summary: Gets events linked to this one
+      description: ""
+      parameters:
+        - $ref: "#/components/parameters/author"
+        - $ref: "#/components/parameters/id"
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/small"
+        - $ref: "#/components/parameters/upToPage"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+
+  /event/search:
+    get:
+      summary: Retrieves found events
+      description: ""
+      parameters:
+        - name: websearch
+          in: query
+          description: Search string
+          allowEmptyValue: true
+          schema:
+            type: string
+        - name: dtStart
+          in: query
+          description: Date start
+          allowEmptyValue: true
+          schema:
+            type: string
+        - name: dtEnd
+          in: query
+          description: Date end
+          allowEmptyValue: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/page"
+        - $ref: "#/components/parameters/small"
+        - $ref: "#/components/parameters/upToPage"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+
+    post:
+      summary: Sends request for search anchor
+      description: ""
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                websearch:
+                  type: string
+                searchDtStart:
+                  type: string
+                searchDtEnd:
+                  type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+
+  /logout:
+    post:
+      summary: Logs the user out
+      description: ""
+      parameters:
+        - $ref: "#/components/parameters/sessionCookie"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+
+  /user/{username}:
+    get:
+      summary: Gets user's page
+      description: ""
+      parameters:
+        - $ref: "#/components/parameters/username"
+        - $ref: "#/components/parameters/sessionCookie"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+        "404":
+          description: User not found
+          content:
+            text/html: {}
+
+  /user/{username}/follow:
+    post:
+      summary: Follows this user
+      description: ""
+      parameters:
+        - $ref: "#/components/parameters/username"
+        - $ref: "#/components/parameters/sessionCookie"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+        "404":
+          description: User not found
+          content:
+            text/html: {}
+
+  /user/{username}/unfollow:
+    post:
+      summary: Unfollows this user
+      description: ""
+      parameters:
+        - $ref: "#/components/parameters/username"
+        - $ref: "#/components/parameters/sessionCookie"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+        "404":
+          description: User not found
+          content:
+            text/html: {}
+
+  /user/password:
+    get:
+      summary: Gets password change page
+      description: ""
+      parameters:
+        - $ref: "#/components/parameters/sessionCookie"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+
+    post:
+      summary: Changes user's password
+      description: ""
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                oldPassword:
+                  type: string
+                newPassword:
+                  type: string
+                confirm:
+                  type: string
+      parameters:
+        - $ref: "#/components/parameters/sessionCookie"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+
+  /user/password/otp:
+    post:
+      summary: Validates otp code when changing password
+      description: ""
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                otpCode:
+                  type: string
+      parameters:
+        - $ref: "#/components/parameters/sessionCookie"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+
+  /user/otp/enable:
+    get:
+      summary: Gets OTP enable page
+      description: ""
+      parameters:
+        - $ref: "#/components/parameters/sessionCookie"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+
+    post:
+      summary: Enables OTP for user
+      description: ""
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                otpCode:
+                  type: string
+      parameters:
+        - $ref: "#/components/parameters/sessionCookie"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+
+  /user/otp/disable:
+    get:
+      summary: Gets OTP code form for OTP disable
+      description: ""
+      parameters:
+        - $ref: "#/components/parameters/sessionCookie"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+
+    post:
+      summary: Disales OTP for user
+      description: ""
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                otpCode:
+                  type: string
+      parameters:
+        - $ref: "#/components/parameters/sessionCookie"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+
+  /user/{username}/block:
+    post:
+      summary: Blocks specified user
+      description: ""
+      parameters:
+        - $ref: "#/components/parameters/username"
+        - $ref: "#/components/parameters/sessionCookie"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+        "404":
+          description: User not found
+          content:
+            text/html: {}
+
+  /user/{username}/unblock:
+    post:
+      summary: Unblocks specified user
+      description: ""
+      parameters:
+        - $ref: "#/components/parameters/username"
+        - $ref: "#/components/parameters/sessionCookie"
+      responses:
+        "200":
+          $ref: "#/components/responses/ok"
+        "500":
+          $ref: "#/components/responses/internalError"
+        "404":
+          description: User not found
+          content:
+            text/html: {}
+
+components:
+  parameters:
+    sessionCookie:
+      name: session
+      description: session cookie
+      in: cookie
+      required: true
+      schema:
+        type: string
+
+    author:
+      name: author
+      description: Username of the author of the event
+      in: path
+      required: true
+      schema:
+        type: string
+
+    username:
+      name: username
+      description: Username of the user
+      in: path
+      required: true
+      schema:
+        type: string
+
+    id:
+      name: id
+      description: Event id
+      in: path
+      required: true
+      schema:
+        type: integer
+
+    small:
+      name: small
+      in: query
+      description: Whether returned cards should be small or opened
+      allowEmptyValue: true
+      schema:
+        type: boolean
+
+    page:
+      name: page
+      in: query
+      description: Page of events
+      schema:
+        type: integer
+
+    upToPage:
+      name: upToPage
+      in: query
+      description: Up to page of events
+      schema:
+        type: integer
+
+  responses:
+    ok:
+      description: Request completed successfully, or error message returned to user for corrections
+      content:
+        text/html: {}
+
+    internalError:
+      description: Failed to render, query database, convert or validate parameters
+      content:
+        text/html: {}
+
