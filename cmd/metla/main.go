@@ -83,7 +83,6 @@ func main() {
 		r.Method("GET", "/events", mhttp.EventPageGet(db))
 		r.Method("POST", "/event/new", mhttp.EventNewPost(db))
 		r.Method("GET", "/event/{author}-{id}", mhttp.EventGet(db))
-		r.Method("DELETE", "/event/{author}-{id}", mhttp.EventDelete(db))
 		r.Method("GET", "/event/{author}-{id}/links", mhttp.EventLinksPageGet(db))
 		r.Method("POST", "/event/search", mhttp.EventSearchPost(db))
 		r.Method("GET", "/event/search", mhttp.EventSearchGet(db))
@@ -92,6 +91,7 @@ func main() {
 			r.Use(mware.Auth(db))
 
 			r.Method("POST", "/logout", mhttp.Logout(db))
+			r.Method("DELETE", "/event/{author}-{id}", mhttp.EventDelete(db))
 
 			r.Route("/user", func(r chi.Router) {
 				r.Method("GET", "/{username}", mhttp.User(db))
