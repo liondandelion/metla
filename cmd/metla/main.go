@@ -91,7 +91,7 @@ func main() {
 		r.Group(func(r chi.Router) {
 			r.Use(mware.Auth(db))
 
-			r.Method("GET", "/logout", mhttp.Logout(db))
+			r.Method("POST", "/logout", mhttp.Logout(db))
 
 			r.Route("/user", func(r chi.Router) {
 				r.Method("GET", "/{username}", mhttp.User(db))

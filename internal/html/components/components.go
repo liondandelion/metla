@@ -70,7 +70,7 @@ func Navbar(username string, isAuthenticated, isAdmin bool) g.Node {
 							),
 						),
 						gh.Li(
-							gh.A(gh.Class("button-like"), gh.Href("/logout"), g.Text("Logout")),
+							gh.A(gh.Class("button-like"), ghtmx.Post("/logout"), gh.Href("/logout"), g.Text("Logout")),
 						),
 					},
 				),

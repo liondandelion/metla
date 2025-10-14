@@ -283,7 +283,7 @@ func Logout(db mdb.DB) http.Handler {
 		db.UserTokenRenew(r.Context())
 		db.UserSessionDataDestroy(r.Context())
 
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		HTMXRedirect(w, "/")
 		return nil
 	})
 }
