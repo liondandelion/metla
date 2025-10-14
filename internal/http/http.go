@@ -102,7 +102,7 @@ func RegisterPost(db mdb.DB) http.Handler {
 
 		isValid := UsernameIsValid(username)
 		if !isValid {
-			node := mc.Error("serverResponse", "Username should contain only unicode letters, numbers, '-' and '_'")
+			node := mc.Error("serverResponse", "Username should contain only unicode letters, numbers, symbols '_'")
 			if err := node.Render(w); err != nil {
 				return &MetlaError{"RegisterPost", "failed to render", err, http.StatusInternalServerError}
 			}
